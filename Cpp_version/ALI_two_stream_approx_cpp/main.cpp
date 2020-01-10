@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <vector>
 #include <cmath>
-#include <altivec.h>
 
 // ALI numerical algorithm for the two stream approximation
 
@@ -57,6 +56,9 @@ void tau_fn(double *delta_tau, double *z_arr, double delta_z, int N)
         // alpha[i] = (10.^(5. - 6.*x[i])), where x[i] is our current cell (not grid point)
         delta_tau[k] = sqrt(3.)*delta_z*pow(10.,(5.-6.*x));
     }
+
+    // delta_tau has been found!
+    return;
 }
 
 // Define the third order quadratic interpolation coefficients function
@@ -109,6 +111,9 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
     free(e0);
     free(e1);
     free(e2);
+
+    // Return the function
+    return;
 }
 
 // Set the Lambda_star matrix and M_star matrix tri-diagonal components
@@ -172,11 +177,14 @@ void matrix_build(double *lambda_a, double *lambda_b, double *lambda_c, double *
             m_c[k] = -(1. - eps)*lambda_c[k];
         }
     }
+    // All components of lambda_star and M_star have been found
+    return;
 }
 
 // Setup the source function interpolation, this includes the quadrature limiter that does not allow sources to
 // become negative (aka non-physical)
-void S_interp(double S_int, double *S_arr, double *B_arr, double *z_arr, double delta_z, int x, bool plus)
+void S_interp(double S_int, double *alpha_arr, double *S_arr, double *z_arr, double *up, double *pp, double *dp,
+        double *um, double *pm, double *dm, double delta_z, int x, bool plus)
 {
     /* Source term interpolation function that includes a maximum quadrature limiter that does not allow any source term
      * to have a negative value.
@@ -187,7 +195,6 @@ void S_interp(double S_int, double *S_arr, double *B_arr, double *z_arr, double 
      * -----
      * alpha_arr: Array containing the value of the emissivity at each grid point, double precision, size n
      * S_arr: An array containing the values of the source function at every point in the grid, double precision, size n
-     * B_arr: Thermal source function value at every point on the grid, double precision, size n
      * z_arr: The grid, double precision, size n
      * delta_z: The step size between grid points, double precision, single value
      * x: The location within the grid that needs to be interpolated, x in z[x], integer, single value.
@@ -201,7 +208,87 @@ void S_interp(double S_int, double *S_arr, double *B_arr, double *z_arr, double 
     double Q_max;  // This is the upper value of the limiter
     double Q_curr; // This is the value of the interpolation using the coefficients ane S_arr
 
-    // Discuss where the equations come from and what they are
+    /* The quadrature limiter for third order integration is discussed in Ch.3, section 3.8.4, equation 3.39
+     * This equation is for the I+ vector: Q_curr = up*S[x-1] + pp*S[x] + dp*S[x+1]
+     * For the maximum upper limit the equation is found in Ch.3, section 3.8.4, equation 3.37
+     * Q_max = 0.5*(alpha[x] + alpha[x-1])*delta_z
+     * The final value of the source term interpolation is determined by equation 3.46, section 3.8.4, Ch.3
+     * S_int = max(min(Q_curr[x],Q_max[x]),0.) */
+
+    Q_max = 0.5*(alpha_arr[x] - alpha_arr[x-1])*delta_z;
+
+    if (plus=='True')
+    {
+        Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
+        S_int = fmax(fmin(Q_curr,Q_max),0.);
+    }
+    else
+    {
+        Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
+        S_int = fmax(fmin(Q_curr,Q_max),0.);
+    }
+
+    // S_int has been found for either I+ or I- so return the function
+    return;
+
+}
+
+// The tri-diagonal matrix solver, the proof that this works for diagonally dominant and non-diagonally dominant
+// tri-diagonal is shown in a separate file.
+void tri_solver(double *a, double *b, double *c, double *y, double *X, int n)
+{
+    /* Compute the array x in the equation Mx = y given the lower diagonal a, diagonal
+     * b, and upper diagonal c of matrix M_star */
+
+    int i;
+    double *c_prime, *y_prime;
+
+    // Allocate the prime arrays
+    c_prime = (double *) calloc(n, sizeof(double));
+    y_prime = (double *) calloc(n, sizeof(double));
+
+    /* What the algorithm is actually doing
+     * for i = 0
+     * ---------
+     * c_prime[i] = c[i]/b[i]
+     * y_prime[i] = y[i]/b[i]
+     *
+     * for i = 1,2,3,...,n-2
+     * ---------------------
+     * c_prime[i] = c[i]/(b[i] - a[i]*c_prime[i-1])
+     * y_prime[i] = (y[i] - a[i]*y_prime[i-1]/(b[i] - a[i]*c_prime[i-1])
+     *
+     * for i = n-1
+     * ------------
+     * y_prime[i] = (y[i] - a[i]*y_prime[i-1]/(b[i] - a[i]*c_prime[i-1])
+     * X[i] = y_prime[i]
+     *
+     * for i = n-2, n-3,..., 0
+     * ------------------------
+     * X[i] = y_prime[i] - c_prime[i]*X[i+1] */
+
+    for (i = 0; i < n; i++) {
+        if (i == 0) {
+            c_prime[i] = c[i] / b[i];
+            y_prime[i] = y[i] / b[i];
+        } else if (i > 0 && i < n - 1) {
+            c_prime[i] = c[i] / (b[i] - a[i] * c_prime[i - 1]);
+            y_prime[i] = (y[i] - a[i] * y_prime[i - 1]) / (b[i] - a[i] * c_prime[i - 1]);
+        } else if (i == n - 1) {
+            y_prime[i] = (y[i] - a[i] * y_prime[i - 1]) / (b[i] - a[i] * c_prime[i - 1]);
+            X[i] = y_prime[i];
+        }
+    }
+    for (i = n - 2; i >= 0; i--) {
+        X[i] = y_prime[i] - c_prime[i] * X[i + 1];
+    }
+
+    // Free the memory
+    free(c_prime);
+    free(y_prime);
+
+    // X has been found so exit the function
+    return;
 }
 
 int main()
