@@ -76,11 +76,12 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
      * up, pp, dp: the three interpolation coefficients for the ray integrating from the bottom of the grid up, size n
      * um, pm, dm: the three interpolation coefficients for the ray integrating from the top of the grid down, size n */
 
-    double *e0 = new double[N];  // Array used to calculate interpolation coefficients
-    double *e1 = new double[N];  // Array used to calculate interpolation coefficients
-    double *e2 = new double[N];  // Array used to calculate interpolation coefficients
+    double *e0, *e1, *e2; // interpolation coefficients
+    int k;                // Cell index
 
-    int k; // Cell index
+    e0 = (double *) calloc(N, sizeof(double)); // Array used to calculate interpolation coefficients
+    e1 = (double *) calloc(N, sizeof(double)); // Array used to calculate interpolation coefficients
+    e2 = (double *) calloc(N, sizeof(double)); // Array used to calculate interpolation coefficients
 
     // Loop through and set up the optical depth dependence for each height
     // Ch.3 section 3.8.4, equations 3.43-3.45
@@ -117,8 +118,8 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
 }
 
 // Set the Lambda_star matrix and M_star matrix tri-diagonal components
-void matrix_build(double *lambda_a, double *lambda_b, double *lambda_c, double *m_a, double *m_b, double *m_c,
-        double *up, double *pp, double *dp,double *um, double *pm, double *dm, double eps, int n)
+void matrix_build(int n, double lambda_s[][n], double *m_a, double *m_b, double *m_c,
+        double *up, double *pp, double *dp,double *um, double *pm, double *dm, double eps)
 {
     /* This will compute the lambda_star and M lower and upper diagonals and the diagonal.
      *
@@ -138,7 +139,9 @@ void matrix_build(double *lambda_a, double *lambda_b, double *lambda_c, double *
      * m_b = diagonal of the M_star matrix, double precision, size n
      * m_c = upper diagonal of the M_star matrix, double precision, size n */
 
-    int k;  // Cell index
+    int k;                                        // Cell index
+    double lambda_a[n], lambda_b[n], lambda_c[n]; // Temporary lower diagonal, diagonal, and upper diagonal to
+                                                  // accurately keep track of each one
 
     /* Loop through and set each of each tri-diagonal components for both lambda_star and M_star
      * Equations for each lambda_star tri-diagonal component can be found in Ch.4, section 4.4.5, equations 4.57-4.59
@@ -151,30 +154,46 @@ void matrix_build(double *lambda_a, double *lambda_b, double *lambda_c, double *
     {
         if (k==0)
         {
+            // Lambda_star upper, lower, and direct diagonals
             lambda_a[k] = 0.;
             lambda_b[k] = 0.5*(pp[k]+pm[k]);
             lambda_c[k] = 0.5*(dp[k]+um[k]);
+            // M_star upper, lower, and direct diagonals
             m_a[k] = 0.;
             m_b[k] = 1. - (1. - eps)*lambda_b[k];
             m_c[k] = -(1. - eps)*lambda_c[k];
+            // Lambda_star matrix
+            lambda_s[k][k] = lambda_b[k];
+            lambda_s[k+1][k] = lambda_c[k];
         }
         else if (k==n-1)
         {
+            // Lambda_star upper, lower, and direct diagonals
             lambda_a[k] = 0.5*(up[k]+dm[k]);
             lambda_b[k] = 0.5*(pp[k]+pm[k]);
             lambda_c[k] = 0.;
+            // M_star upper, lower, and direct diagonals
             m_a[k] = -(1. - eps)*lambda_a[k];
             m_b[k] = 1. - (1. - eps)*lambda_b[k];
             m_c[k] = 0.;
+            // Lambda_star matrix
+            lambda_s[k-1][k] = lambda_a[k];
+            lambda_s[k][k] = lambda_b[k];
         }
         else
         {
+            // Lambda_star upper, lower, and direct diagonals
             lambda_a[k] = 0.5*(up[k]+dm[k]);
             lambda_b[k] = 0.5*(pp[k]+pm[k]);
             lambda_c[k] = 0.5*(dp[k]+um[k]);
+            // M_star upper, lower, and direct diagonals
             m_a[k] = -(1. - eps)*lambda_a[k];
             m_b[k] = 1. - (1. - eps)*lambda_b[k];
             m_c[k] = -(1. - eps)*lambda_c[k];
+            // Lambda_star matrix
+            lambda_s[k-1][k] = lambda_a[k];
+            lambda_s[k][k] = lambda_b[k];
+            lambda_s[k+1][k] = lambda_c[k];
         }
     }
     // All components of lambda_star and M_star have been found
@@ -237,8 +256,20 @@ void S_interp(double S_int, double *alpha_arr, double *S_arr, double *z_arr, dou
 // tri-diagonal is shown in a separate file.
 void tri_solver(double *a, double *b, double *c, double *y, double *X, int n)
 {
-    /* Compute the array x in the equation Mx = y given the lower diagonal a, diagonal
-     * b, and upper diagonal c of matrix M_star */
+    /* Compute the array X in the equation MX = y given the lower diagonal a, diagonal
+     * b, and upper diagonal c of matrix M_star
+     *
+     * Input
+     * -----
+     * a: lower diagonal of matrix M_star
+     * b: diagonal of matrix M_star
+     * c: upper diagonal of matrix M_star
+     * y: the RHS of the equation Mx = y
+     * n: the size of the square matrix (nxn)
+     *
+     * Output
+     * ------
+     * X: the solution of MX = y equation */
 
     int i;
     double *c_prime, *y_prime;
@@ -268,18 +299,22 @@ void tri_solver(double *a, double *b, double *c, double *y, double *X, int n)
      * X[i] = y_prime[i] - c_prime[i]*X[i+1] */
 
     for (i = 0; i < n; i++) {
-        if (i == 0) {
+        if (i == 0)
+        {
             c_prime[i] = c[i] / b[i];
             y_prime[i] = y[i] / b[i];
-        } else if (i > 0 && i < n - 1) {
+        } else if (i > 0 && i < n - 1)
+        {
             c_prime[i] = c[i] / (b[i] - a[i] * c_prime[i - 1]);
             y_prime[i] = (y[i] - a[i] * y_prime[i - 1]) / (b[i] - a[i] * c_prime[i - 1]);
-        } else if (i == n - 1) {
+        } else if (i == n - 1)
+        {
             y_prime[i] = (y[i] - a[i] * y_prime[i - 1]) / (b[i] - a[i] * c_prime[i - 1]);
             X[i] = y_prime[i];
         }
     }
-    for (i = n - 2; i >= 0; i--) {
+    for (i = n - 2; i >= 0; i--)
+    {
         X[i] = y_prime[i] - c_prime[i] * X[i + 1];
     }
 
@@ -291,17 +326,87 @@ void tri_solver(double *a, double *b, double *c, double *y, double *X, int n)
     return;
 }
 
+void mat_mult(int N, double mat_a[][N], double mat_b[][N], double mat_c[][N])
+{
+    /* This is a generic matrix multiplication function that can multiply any two matrices that are compatible; meaning
+     * that they have the correct dimensions. For example: mxn * nxn is compatible but nxm * nxn is not compatible.
+     * mat_a * mat_b = mat_c
+     *
+     * Input
+     * -----
+     * N: the size of the grid (n)
+     * mat_a: this is the first matrix on the LHS of the equation above
+     * mat_b: this is the second matrix on the LHS of the equation above
+     *
+     * Output
+     * ------
+     * mat_c: this is the resulting matrix from the multiplication */
+
+    int i, j, k, m_a, n_a, m_b, n_b; // The necessary counters and matrix dimensions
+                                     // m_a, n_a are the mxn dimensions of mat_a etc.
+
+    // Get the row sizes
+    m_a = sizeof(mat_a[0]);
+    m_b = sizeof(mat_b[0]);
+
+    // Get the column sizes
+    n_a = sizeof(mat_a);
+    n_b = sizeof(mat_b);
+
+    // Initialize mat_c to have 0. in all elements
+    for (int i = 0; i < m_a; ++i)
+    {
+        for (int j = 0; j < n_b; j++)
+        {
+            mat_c[i][j] = 0;
+        }
+    }
+
+    // Not needed after the code is written
+    n_a = N;
+    m_b = N;
+
+    // Check and make sure the matrices are compatible
+    if (n_a != m_b)
+    {
+        printf("Matrices are not compatible; nxn * mxn \n");
+        return ;
+    }
+    else
+    {
+        // Do the multiplication and find the resulting matrix
+        for (i = 0; i < m_a; ++i)
+        {
+            for (j = 0; j < n_b; ++j)
+            {
+                for (k = 0; k < n_a; ++k)
+                {
+                    // For each element mat_c[i][j] you must add the n_a multiplications
+                    mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
+                }
+            }
+        }
+    }
+
+    // mat_c has been found so we are done
+    return;
+}
+
 int main()
 {
     // Allocate the variables
     //--------------------------------
-    int i;     // Cell index
-    int n=70;  // Number of cells
-    int N=n+1; // Number of grid points
+    int i,t;     // Cell indices and counters
+    int n=70;    // Number of cells
+    int N=n+1;   // Number of grid points
 
     double del_z = 1./n;     // Grid step size
     double epsilon = 0.0001; // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
     double j;                // Double precision counter
+    double S_val_plus;       // Double precision value for the S interpolation used to solve for I+
+    double S_val_minus;      // Double precision value for the S interpolation used to solve for I-
+
+    bool plus_minus; // The boolean used for interpolation of the source function S
 
     double *B = new double[n];       // The thermal source function (aka the Planck Function)
     double *del_tau = new double[N]; // Change in optical depth
@@ -311,9 +416,9 @@ int main()
     double *u_m = new double[n];     // "Minus" u interpolation coefficient array (the vector going from top down)
     double *p_m = new double[n];     // "Minus" p interpolation coefficient array (the vector going from top down)
     double *d_m = new double[n];     // "Minus" d interpolation coefficient array (the vector going from top down)
-    double *lmbda_a = new double[n]; // Lower diagonal of the lambda_star operator
-    double *lmbda_b = new double[n]; // Diagonal of the lambda_star operator
-    double *lmbda_c = new double[n]; // Upper diagonal of the lambda_star operator
+    //double *lmbda_a = new double[n]; // Lower diagonal of the lambda_star operator
+    //double *lmbda_b = new double[n]; // Diagonal of the lambda_star operator
+    //double *lmbda_c = new double[n]; // Upper diagonal of the lambda_star operator
     double *M_a = new double[n];     // Lower diagonal of the matrix M_star
     double *M_b = new double[n];     // Diagonal of the matrix M_star
     double *M_c = new double[n];     // Upper diagonal of the matrix M_star
@@ -324,30 +429,83 @@ int main()
     double *S = new double[n];       // The source function
     double *J = new double[n];       // The mean specific intensity
     double *z = new double[n];       // The grid array
+    double *ls_S = new double[n];    // Used for matrix multiplication in finding y_arr, representing lambda_star * S
 
-    std::vector<std::vector<double>> lmbda_s(n,std::vector<double>(n)); // Lambda_star matrix
+    //std::vector<std::vector<double>> lmbda_s(n,std::vector<double>(n)); // Lambda_star matrix
+    double lmbda_s[n][n];
 
     // Initialize the variables
     //--------------------------------
-    for (i=0;i<n;i++)
+    z[0] = 0.;                               // The grid increases by step size del_z and goes from 0 to 1
+    B[0] = 1.;                               // The thermal source function in this example is constant in this example
+    alpha[0] = B[i]*pow(10.,(5.-6.*z[i]));   // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
+    I_plus[0] = 1.;                          // The bottom-up specific intensity
+    I_minus[0] = 0.;                         // The top-down specific intensity
+    J[0] = 1.;                               // The average specific intensity
+    S[0] = epsilon*B[0] + (1.-epsilon)*J[0]; // The source function Ch.4 section 4.4.4, equation 4.37
+
+    for (i=1;i<n;i++)
     {
         j = (double) (i);
-        z[i] = j*del_z;                       // The grid increases by step size del_z and goes from 0 to 1
-        B[i] = 1.;                            // The thermal source function in this example is constant in this example
-        alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));// The emissivity, depends on z
+        z[i] = j*del_z;
+        B[i] = 1.;
+        alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
+        I_plus[i] = 0.;
+        I_minus[i] = 0.;
+        J[i] = 0.;
+        S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
     }
 
+    // Set other grids, interpolation coefficients, and matrices
+    //----------------------------------------------------------------
     // Set the array of differences in optical depth for each cell by calling its function
     tau_fn(del_tau,z,del_z,N);
 
     // Set the array of third order quadratic interpolation coefficients
     quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,N);
 
-    // Set the tri-diagonal arrays of the lambda_star and M_star matrix
-    matrix_build(lmbda_a,lmbda_b, lmbda_c,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
+    // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
+    // Currently not working because of trouble with defining matrix in main and in function input
+    //matrix_build(n,lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon);
 
-    // Actually build the lambda_star matrix because it is needed for multiplication
-    // Might not actually need that... we will see as this continues
+    // Solve for converged S
+    // The 1D diffusion equation is a 2nd order PDE where lambda_star*S is the solution
+    // The numerical representation used for this PDE is Central Space
+    // Forward substitution + backward substitution are used to solve the PDE
+    //--------------------------
+    for (t = 1; t < 101; t++)
+    {
+        // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
+        // It needs to be used in the next loop but it does not need to be re-calculated every time
+        //mat_mult(n,lmbda_s,S,ls_S);
+        for (i = 1; i < n; i++)
+        {
+            // First solve the bottom-up interpolated value of S
+            plus_minus = 'True';
+            S_interp(S_val_plus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,plus_minus);
+
+            // First solve the top-down interpolated value of S
+            plus_minus = 'False';
+            S_interp(S_val_minus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,plus_minus);
+
+            // Solve for the (interpolated) integration of the specific intensity for each ray
+            // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
+            I_plus[i] = exp(-del_tau[i-1]) * I_plus[i-1] + S_val_plus;
+            I_minus[i] = exp(-del_tau[i]) * I_plus[i] + S_val_minus;
+
+            // Update the mean specific intensity from both rays
+            // Ch.4, section 4.4.5, equation 4.56
+            J[i] = 0.5 * (I_plus[i] + I_minus[i]);
+
+            // Solve for each component of the y array in MX = y
+            // Ch.4, section 4.4.4, equation 4.48
+            // Might need to do the first component outside of here...
+            y_arr[i] = epsilon*B[t] + (1. - epsilon); // * (J[t] - ls_S[t])
+        }
+        // Now use the tri-diagonal solver to actually update S
+        tri_solver(M_a,M_b,M_c,y_arr,S,n);
+        S[0] = 1.;
+    }
 
     return 0;
 }
