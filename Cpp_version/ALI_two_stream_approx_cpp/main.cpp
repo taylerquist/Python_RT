@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <vector>
 #include <cmath>
 
@@ -118,8 +119,8 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
 }
 
 // Set the Lambda_star matrix and M_star matrix tri-diagonal components
-void matrix_build(int n, double lambda_s[][n], double *m_a, double *m_b, double *m_c,
-        double *up, double *pp, double *dp,double *um, double *pm, double *dm, double eps)
+void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c,
+        double *up, double *pp, double *dp,double *um, double *pm, double *dm, double eps, int n)
 {
     /* This will compute the lambda_star and M lower and upper diagonals and the diagonal.
      *
@@ -132,9 +133,7 @@ void matrix_build(int n, double lambda_s[][n], double *m_a, double *m_b, double 
      *
      * Output
      * ------
-     * lambda_a: the lower diagonal of the lambda_star matrix, double precision, size n
-     * lambda_b: the diagonal of the lambda_star matrix, double precision, size n
-     * lambda_c: the upper diagonal of the lambda_star matrix, double precision, size n
+     * lambda_s: lambda_star matrix, double precision, size nxn
      * m_a = lower diagonal of the M_star matrix, double precision, size n
      * m_b = diagonal of the M_star matrix, double precision, size n
      * m_c = upper diagonal of the M_star matrix, double precision, size n */
@@ -326,67 +325,48 @@ void tri_solver(double *a, double *b, double *c, double *y, double *X, int n)
     return;
 }
 
-void mat_mult(int N, double mat_a[][N], double mat_b[][N], double mat_c[][N])
+void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
 {
-    /* This is a generic matrix multiplication function that can multiply any two matrices that are compatible; meaning
-     * that they have the correct dimensions. For example: mxn * nxn is compatible but nxm * nxn is not compatible.
-     * mat_a * mat_b = mat_c
+    /* This is a matrix multiplication function that can multiply a matrix with a column vector that are compatible;
+     * For example: mxn * nx1 is compatible but nxm * nx1 is not compatible.
+     * mat_a * vec_b = mat_c
      *
      * Input
      * -----
      * N: the size of the grid (n)
      * mat_a: this is the first matrix on the LHS of the equation above
-     * mat_b: this is the second matrix on the LHS of the equation above
+     * vec_b: this is the column vector on the LHS of the equation above, in C++ it must be stored as a matrix
+     * N: the size of the matrix (NxN) and column vector (Nx1)
      *
      * Output
      * ------
      * mat_c: this is the resulting matrix from the multiplication */
 
-    int i, j, k, m_a, n_a, m_b, n_b; // The necessary counters and matrix dimensions
-                                     // m_a, n_a are the mxn dimensions of mat_a etc.
+    int i, j, k; // The necessary counters
 
-    // Get the row sizes
-    m_a = sizeof(mat_a[0]);
-    m_b = sizeof(mat_b[0]);
-
-    // Get the column sizes
-    n_a = sizeof(mat_a);
-    n_b = sizeof(mat_b);
 
     // Initialize mat_c to have 0. in all elements
-    for (int i = 0; i < m_a; ++i)
+    for (int i = 0; i < N; ++i)
     {
-        for (int j = 0; j < n_b; j++)
+        for (int j = 0; j < N; j++)
         {
             mat_c[i][j] = 0;
         }
     }
 
-    // Not needed after the code is written
-    n_a = N;
-    m_b = N;
-
-    // Check and make sure the matrices are compatible
-    if (n_a != m_b)
+    // Do the multiplication and find the resulting matrix
+    for (i = 0; i < N; ++i)
     {
-        printf("Matrices are not compatible; nxn * mxn \n");
-        return ;
-    }
-    else
-    {
-        // Do the multiplication and find the resulting matrix
-        for (i = 0; i < m_a; ++i)
+        for (j = 0; j < N; ++j)
         {
-            for (j = 0; j < n_b; ++j)
+            for (k = 0; k < N; ++k)
             {
-                for (k = 0; k < n_a; ++k)
-                {
-                    // For each element mat_c[i][j] you must add the n_a multiplications
-                    mat_c[i][j] += mat_a[i][k] * mat_b[k][j];
-                }
+                // For each element mat_c[i][j] you must add the n_a multiplications
+                mat_c[i][j] += mat_a[i][k] * vec_b[k][0];
             }
         }
     }
+
 
     // mat_c has been found so we are done
     return;
@@ -406,7 +386,7 @@ int main()
     double S_val_plus;       // Double precision value for the S interpolation used to solve for I+
     double S_val_minus;      // Double precision value for the S interpolation used to solve for I-
 
-    bool plus_minus; // The boolean used for interpolation of the source function S
+    bool Plus; // The boolean used for interpolation of the source function S
 
     double *B = new double[n];       // The thermal source function (aka the Planck Function)
     double *del_tau = new double[N]; // Change in optical depth
@@ -429,10 +409,20 @@ int main()
     double *S = new double[n];       // The source function
     double *J = new double[n];       // The mean specific intensity
     double *z = new double[n];       // The grid array
-    double *ls_S = new double[n];    // Used for matrix multiplication in finding y_arr, representing lambda_star * S
+    //double *ls_S = new double[n];    // Used for matrix multiplication in finding y_arr, representing lambda_star * S
 
-    //std::vector<std::vector<double>> lmbda_s(n,std::vector<double>(n)); // Lambda_star matrix
-    double lmbda_s[n][n];
+    double **lmbda_s;                // This is the lambda_star matrix
+    lmbda_s = (double **) std::malloc(n * sizeof(double *));
+    for(i=0;i<n;i++)
+    {
+        lmbda_s[i] = (double *) std::malloc(n * sizeof(double));
+    }
+    double **lmbda_s_J;                // This is the lambda_star matrix
+    lmbda_s_J = (double **) std::malloc(n * sizeof(double *));
+    for(i=0;i<n;i++)
+    {
+        lmbda_s[i] = (double *) std::malloc(1 * sizeof(double));
+    }
 
     // Initialize the variables
     //--------------------------------
@@ -443,6 +433,8 @@ int main()
     I_minus[0] = 0.;                         // The top-down specific intensity
     J[0] = 1.;                               // The average specific intensity
     S[0] = epsilon*B[0] + (1.-epsilon)*J[0]; // The source function Ch.4 section 4.4.4, equation 4.37
+    S_val_plus = 0.;                         // Will later be used for interpolation for the bottom-up, I+ array
+    S_val_minus = 0.;                        // Will later be used for interpolation for the top-down, I-, array
 
     for (i=1;i<n;i++)
     {
@@ -466,7 +458,8 @@ int main()
 
     // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
     // Currently not working because of trouble with defining matrix in main and in function input
-    //matrix_build(n,lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon);
+    matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
+
 
     // Solve for converged S
     // The 1D diffusion equation is a 2nd order PDE where lambda_star*S is the solution
@@ -477,16 +470,16 @@ int main()
     {
         // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
         // It needs to be used in the next loop but it does not need to be re-calculated every time
-        //mat_mult(n,lmbda_s,S,ls_S);
+        //mat_mult(lmbda_s,J,ls_S,n);
         for (i = 1; i < n; i++)
         {
             // First solve the bottom-up interpolated value of S
-            plus_minus = 'True';
-            S_interp(S_val_plus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,plus_minus);
+            Plus = true;
+            S_interp(S_val_plus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
             // First solve the top-down interpolated value of S
-            plus_minus = 'False';
-            S_interp(S_val_minus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,plus_minus);
+            Plus = false;
+            S_interp(S_val_minus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
             // Solve for the (interpolated) integration of the specific intensity for each ray
             // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
