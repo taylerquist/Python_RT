@@ -54,4 +54,7 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
   free(e0);
   free(e1);
   free(e2);
+
+  // Return the function
+  return;
 }
