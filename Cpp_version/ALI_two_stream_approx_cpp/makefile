@@ -1,4 +1,4 @@
-EXEC   = hello_world
+EXEC   = main_out
 
 OPTIMIZE =  -O2  
 

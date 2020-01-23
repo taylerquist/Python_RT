@@ -11,8 +11,6 @@
 #include "tri_solver.h"
 #include "mat_mult.h"
 
-using std::ofstream;
-
 int main()
 {
   // Allocate the variables
