@@ -80,6 +80,4 @@ void tri_solver(double *a, double *b, double *c, double *y, double **X, int n)
   // Free the memory
   free(c_prime);
   free(y_prime);
-
-  // X has been found
 }
