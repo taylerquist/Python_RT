@@ -1,0 +1,37 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Initialize the arrays
+x = []
+y = []
+
+# Read the file and strip it of any extra whitespace
+file = open('out_file.txt','r').read().strip()
+# Make one list containing each value from the .txt file
+s = file.split("\n")
+# Initialize a counter that will create our z-array later
+j = -1
+for i in s:
+    if (j == -1):
+        x.append(float(i))
+    else:
+        x.append(float(i))
+        y.append(float(j))
+    j += 1
+
+epsilon = x[0]
+
+x = np.array(x[1:])
+y = np.array(y)
+z = y/(len(y)-1.)
+
+print(x)
+print(z)
+
+plt.semilogy(z,x)
+plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
+plt.xlabel("z")
+plt.ylabel("S/B")
+plt.ylim(0.0001,1.2)
+plt.xlim(-0.01,1.0)
+plt.show()

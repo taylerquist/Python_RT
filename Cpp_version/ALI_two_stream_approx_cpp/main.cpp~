@@ -13,6 +13,25 @@
 
 using std::ofstream;
 
+// ALI numerical algorithm for the two stream approximation
+/* Notes references
+ * -----------------
+ * Dullemond Radiative Transfer class notes, chapters 3 and 4:
+ * http://www.ita.uni-heidelberg.de/~dullemond/lectures/radtrans_2012/Chapter_3.pdf
+ * http://www.ita.uni-heidelberg.de/~dullemond/lectures/radtrans_2012/Chapter_4.pdf */
+
+/* The following is the general tri-diagonal matrix layout, thus each diagonal component of the M_star and lambda_star
+ * will be referred to as M_a, M_b,..., etc
+ * | b[0] c[0]  0   ...  0  |
+ * | a[1] b[1] c[1]  0  ... |
+ * |  0   a[2] b[2] c[2] ...|
+ * |  .    .    .    .    . |
+ * |  .    .    .    .    . |
+ * |  .    .    .    .    . |
+ * |...a[n-2] b[n-2] c[n-2] |
+ * |...  ...  a[n-1] b[n-1] |
+ * Note: a[0] = 0 and c[n-1] = 0 */
+
 int main()
 {
   // Allocate the variables

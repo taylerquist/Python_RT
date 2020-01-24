@@ -163,15 +163,9 @@ int main()
   for (i = 0; i < n; ++i)
     {
       // Write to the file in a coherent way
-      data_file << i;
-      data_file << "  ";
       data_file << S[i];
       data_file << "\n";
     }
-  //for (int k = 0; k < n; ++k)
-  //{
-  //    printf("S %2.1f\n",S[k]);
-  //}
   data_file.close();
 
   // Free the memory
