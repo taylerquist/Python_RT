@@ -163,7 +163,12 @@ int main()
   for (i = 0; i < n; ++i)
     {
       // Write to the file in a coherent way
-      data_file << S[i];
+      if (i == 0)
+        {
+	  data_file << epsilon;
+	  data_file << "\n";
+        }
+      data_file << S[i][0];
       data_file << "\n";
     }
   data_file.close();

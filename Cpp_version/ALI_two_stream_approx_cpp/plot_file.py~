@@ -6,11 +6,13 @@ x = []
 y = []
 
 # Read the file and strip it of any extra whitespace
-file = open('out_file.txt','r').read().strip()
+file = open('output_file.txt','r').read().strip()
 # Make one list containing each value from the .txt file
 s = file.split("\n")
 # Initialize a counter that will create our z-array later
 j = -1
+# Create an array of the values from the .txt files
+# As well as re-calculating the z_arr
 for i in s:
     if (j == -1):
         x.append(float(i))
@@ -19,15 +21,19 @@ for i in s:
         y.append(float(j))
     j += 1
 
+# Epsilon for the problem will always be the first value in the .txt file
 epsilon = x[0]
 
+# Make these numpy arrays so they can be used more easily
 x = np.array(x[1:])
 y = np.array(y)
+# Normalize the y array to get back z_arr
 z = y/(len(y)-1.)
 
 print(x)
 print(z)
 
+# Plot it
 plt.semilogy(z,x)
 plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
 plt.xlabel("z")

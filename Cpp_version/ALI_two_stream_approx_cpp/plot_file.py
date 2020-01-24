@@ -6,7 +6,7 @@ x = []
 y = []
 
 # Read the file and strip it of any extra whitespace
-file = open('out_file.txt','r').read().strip()
+file = open('output_file.txt','r').read().strip()
 # Make one list containing each value from the .txt file
 s = file.split("\n")
 # Initialize a counter that will create our z-array later
@@ -30,8 +30,8 @@ y = np.array(y)
 # Normalize the y array to get back z_arr
 z = y/(len(y)-1.)
 
-#print(x)
-#print(z)
+print(x)
+print(z)
 
 # Plot it
 plt.semilogy(z,x)
