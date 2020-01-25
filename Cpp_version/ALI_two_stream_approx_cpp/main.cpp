@@ -39,7 +39,6 @@ int main()
   int i,t;   // Cell indices and counters
   int n=70;  // Number of cells
   int N=n+1; // Number of grid points
-  int fd;    // Used for creating an output file
 
   double del_z = 1./n;     // Grid step size
   double epsilon = 0.0001; // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
@@ -129,8 +128,8 @@ int main()
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
-      mat_mult(lmbda_s,J,lmbda_s_S,n);
-      for (i = 1; i < n; i++)
+      mat_mult(lmbda_s,S,lmbda_s_S,n);
+      for (i = 1; i < n-1; i++)
         {
 	  // First solve the bottom-up interpolated value of S
 	  Plus = true;
@@ -194,6 +193,8 @@ int main()
   delete[](I_minus);
   delete[](I_plus);
   delete[](z);
+
+  printf("done \n");
 
   return 0;
 }

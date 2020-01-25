@@ -168,7 +168,7 @@ int main()
 	  data_file << epsilon;
 	  data_file << "\n";
         }
-      data_file << S[i];
+      data_file << S[i][0];
       data_file << "\n";
     }
   data_file.close();

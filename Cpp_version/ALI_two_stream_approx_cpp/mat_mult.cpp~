@@ -47,5 +47,4 @@ void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
     }
 
   // mat_c has been found so we are done
-  return;
 }

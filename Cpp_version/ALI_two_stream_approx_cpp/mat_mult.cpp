@@ -21,28 +21,22 @@ void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
    * ------
    * mat_c: this is the resulting matrix from the multiplication */
 
-  int i, j, k; // The necessary counters
+  int i, k; // The necessary counters
 
 
   // Initialize mat_c to have 0. in all elements
-  for (int i = 0; i < N; ++i)
+  for (i = 0; i < N; ++i)
     {
-      for (int j = 0; j < N; j++)
-        {
-	  mat_c[i][j] = 0;
-        }
+      mat_c[i][0] = 0;
     }
 
   // Do the multiplication and find the resulting matrix
   for (i = 0; i < N; ++i)
     {
-      for (j = 0; j < N; ++j)
+      for (k = 0; k < N; ++k)
         {
-	  for (k = 0; k < N; ++k)
-            {
-	      // For each element mat_c[i][j] you must add the n_a multiplications
-	      mat_c[i][j] += mat_a[i][k] * vec_b[k][0];
-            }
+	  // For each element mat_c[i][j] you must add the n_a multiplications
+	  mat_c[i][0] += mat_a[i][k] * vec_b[k][0];
         }
     }
 
