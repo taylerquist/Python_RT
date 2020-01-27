@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cmath>
-void tau_fn(double *delta_tau, double *z_arr, double delta_z, int N)
+void tau_fn(double *delta_tau, const double *z_arr, const double delta_z, const int N)
 {
   /* Computes the difference in optical depth for each cell in the grid
    *
@@ -30,6 +30,5 @@ void tau_fn(double *delta_tau, double *z_arr, double delta_z, int N)
       // alpha[i] = (10.^(5. - 6.*x[i])), where x[i] is our current cell (not grid point)
       delta_tau[k] = sqrt(3.)*delta_z*pow(10.,(5.-6.*x));
     }
-
   // delta_tau has been found!
 }
