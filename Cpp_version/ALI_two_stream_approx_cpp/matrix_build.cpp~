@@ -88,5 +88,4 @@ void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, doub
   free(lambda_b);
   free(lambda_c);
   // All components of lambda_star and M_star have been found
-  return;
 }

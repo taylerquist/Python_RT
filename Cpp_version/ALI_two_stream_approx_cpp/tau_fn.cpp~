@@ -23,12 +23,19 @@ void tau_fn(double *delta_tau, const double *z_arr, const double delta_z, const 
 
   for (k=0;k<N;k++)
     {
-      x = z_arr[k] + (delta_z/2.);
+      if (k==N-1)
+        {
+	  x = z_arr[N-2] + 2*delta_z;
+        }
+      else
+        {
+	  x = z_arr[k] + (delta_z/2.);
+        }
       // The definition of the difference in optical depth for this problem is: sqrt(3.)*alpha[i]*delta_z
       // This can be found in Ch.4, section 4.4.5, equation 4.55
       // The extinction coefficient (alpha[i]) can be found in Ch.4: section 4.4.2, equation 4.32
       // alpha[i] = (10.^(5. - 6.*x[i])), where x[i] is our current cell (not grid point)
-      delta_tau[k] = sqrt(3.)*delta_z*pow(10.,(5.-6.*x));
+      delta_tau[k] = sqrt(3.)*pow(10.,(5.-(6.*x)))*delta_z;
     }
   // delta_tau has been found!
 }

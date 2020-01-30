@@ -30,8 +30,8 @@ y = np.array(y)
 # Normalize the y array to get back z_arr
 z = y/(len(y)-1.)
 
-print(x)
-print(z)
+#print(x)
+#print(z)
 
 # Plot it
 plt.semilogy(z,x)

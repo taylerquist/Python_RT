@@ -37,5 +37,6 @@ void tau_fn(double *delta_tau, const double *z_arr, const double delta_z, const 
       // alpha[i] = (10.^(5. - 6.*x[i])), where x[i] is our current cell (not grid point)
       delta_tau[k] = sqrt(3.)*pow(10.,(5.-(6.*x)))*delta_z;
     }
+
   // delta_tau has been found!
 }

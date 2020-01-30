@@ -6,7 +6,7 @@
 
 // Setup the source function interpolation, this includes the quadrature limiter that does not allow sources to
 // become negative (aka non-physical)
-void S_interp(double S_int, double *alpha_arr, double **S_arr, double *z_arr, double *up, double *pp, double *dp,
+double S_interp(double *alpha_arr, double **S_arr, double *z_arr, double *up, double *pp, double *dp,
 	      double *um, double *pm, double *dm, double delta_z, int x, bool plus)
 {
   /* Source term interpolation function that includes a maximum quadrature limiter that does not allow any source term
@@ -30,6 +30,7 @@ void S_interp(double S_int, double *alpha_arr, double **S_arr, double *z_arr, do
 
   double Q_max;  // This is the upper value of the limiter
   double Q_curr; // This is the value of the interpolation using the coefficients ane S_arr
+  double S_int;  // The value that is going to be passed back
 
   /* The quadrature limiter for third order integration is discussed in Ch.3, section 3.8.4, equation 3.39
    * This equation is for the I+ vector: Q_curr = up*S[x-1] + pp*S[x] + dp*S[x+1]
@@ -38,19 +39,20 @@ void S_interp(double S_int, double *alpha_arr, double **S_arr, double *z_arr, do
    * The final value of the source term interpolation is determined by equation 3.46, section 3.8.4, Ch.3
    * S_int = max(min(Q_curr[x],Q_max[x]),0.) */
 
-  Q_max = 0.5*(alpha_arr[x] - alpha_arr[x-1])*delta_z;
+  Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
 
   if (plus==true)
     {
       Q_curr = up[x]*S_arr[x-1][0] + pp[x]*S_arr[x][0] + dp[x]*S_arr[x+1][0];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
+      return (S_int);
     }
   else
     {
       Q_curr = um[x]*S_arr[x+1][0] + pm[x]*S_arr[x][0] + dm[x]*S_arr[x-1][0];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
+      return (S_int);
     }
 
-  // S_int has been found for either I+ or I- so return the function
-  return;
+  // S_int has been found for either I+ or I- 
 }

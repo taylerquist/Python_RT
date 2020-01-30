@@ -1,4 +1,4 @@
 #ifndef TAU_FN_H
 #define TAU_FN_H
-void tau_fn(double *delta_tau, double *z_arr, double delta_z, int N);
+void tau_fn(double *delta_tau, const double *z_arr, const double delta_z, const int N)
 #endif //TAU_FN_H

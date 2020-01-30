@@ -40,8 +40,8 @@ int main()
   int n=70;  // Number of cells
   int N=n+1; // Number of grid points
 
-  double del_z = 1./n;     // Grid step size
-  double epsilon = 0.0001; // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
+  double del_z = 1./float(n);     // Grid step size
+  double epsilon = 0.001; // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
   double j;                // Double precision counter
   double S_val_plus;       // Double precision value for the S interpolation used to solve for I+
   double S_val_minus;      // Double precision value for the S interpolation used to solve for I-
@@ -87,14 +87,12 @@ int main()
   //--------------------------------
   z[0] = 0.;                                    // The grid increases by step size del_z and goes from 0 to 1
   B[0] = 1.;                                    // The thermal source function in this example is constant in this example
-  alpha[0] = B[i]*pow(10.,(5.-6.*z[i]));        // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
+  alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));        // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
   I_plus[0] = 1.;                               // The bottom-up specific intensity
   I_minus[0] = 0.;                              // The top-down specific intensity
   J[0][0] = 1.;                                 // The average specific intensity
   S[0][0] = epsilon*B[0] + (1.-epsilon)*J[0][0];// The source function Ch.4 section 4.4.4, equation 4.37
-  S_val_plus = 0.;                              // Will later be used for interpolation for the bottom-up, I+ array
-  S_val_minus = 0.;                             // Will later be used for interpolation for the top-down, I-, array
-
+    
   for (i=1;i<n;i++)
     {
       j = (double) (i);
@@ -124,7 +122,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 1; t < 101; t++)
+  for (t = 0; t < 101; t++)
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
@@ -133,16 +131,15 @@ int main()
         {
 	  // First solve the bottom-up interpolated value of S
 	  Plus = true;
-	  S_interp(S_val_plus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
-
+	  S_val_plus = S_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 	  // First solve the top-down interpolated value of S
 	  Plus = false;
-	  S_interp(S_val_minus,alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+	  S_val_minus = S_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
 	  // Solve for the (interpolated) integration of the specific intensity for each ray
 	  // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
 	  I_plus[i] = exp(-del_tau[i-1]) * I_plus[i-1] + S_val_plus;
-	  I_minus[i] = exp(-del_tau[i]) * I_plus[i] + S_val_minus;
+	  I_minus[i] = exp(-del_tau[i]) * I_minus[i-1] + S_val_minus;
 
 	  // Update the mean specific intensity from both rays
 	  // Ch.4, section 4.4.5, equation 4.56
@@ -150,14 +147,14 @@ int main()
 
 	  // Solve for each component of the y array in MX = y
 	  // Ch.4, section 4.4.4, equation 4.48
-	  // Might need to do the first component outside of here...
-	  // Check that I chose the right component of each matrix
+	  // *** This is where things really start to differ between the Python code ***
 	  y_arr[i] = epsilon*B[t] + (1. - epsilon) * (J[i][0] - lmbda_s_S[i][0]);
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
       S[0][0] = 1.;
     }
+
   data_file.open("output_file.txt");
   for (i = 0; i < n; ++i)
     {
