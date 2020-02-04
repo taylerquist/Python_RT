@@ -127,10 +127,10 @@ int main()
         {
 	  // First solve the bottom-up interpolated value of S
 	  Plus = true;
-	  S_val_plus = s_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+	  S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 	  // First solve the top-down interpolated value of S
 	  Plus = false;
-	  S_val_minus = s_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+	  S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
 	  // Solve for the (interpolated) integration of the specific intensity for each ray
 	  // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54

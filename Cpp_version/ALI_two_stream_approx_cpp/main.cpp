@@ -144,7 +144,7 @@ int main()
 	  // Solve for each component of the y array in MX = y
 	  // Ch.4, section 4.4.4, equation 4.48
 	  // *** This is where things really start to differ between the Python code ***
-	  y_arr[i] = epsilon*B[t] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
+	  y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
