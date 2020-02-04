@@ -46,9 +46,10 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
       dp[k] = (e2[k] - delta_tau[k]*e1[k])/(delta_tau[k+1]*(delta_tau[k]+delta_tau[k+1]));
 
       // The coefficients for the top down array (I-)
-      um[k] = e0[k] + (e2[k] - (2.*delta_tau[k] + delta_tau[k-1])*e1[k])/(delta_tau[k]*(delta_tau[k]+delta_tau[k-1]));
-      pm[k] = (((delta_tau[k]+delta_tau[k-1])*e1[k])-e2[k])/(delta_tau[k]+delta_tau[k-1]);
-      dm[k] = (e2[k] - delta_tau[k]*e1[k])/(delta_tau[k-1]*(delta_tau[k]+delta_tau[k-1]));
+      um[k] = e0[k+1] + (e2[k+1] - (2.*delta_tau[k+1] + delta_tau[k])*e1[k+1])/(delta_tau[k+1]*(delta_tau[k+1]+
+												delta_tau[k]));
+      pm[k] = (((delta_tau[k+1]+delta_tau[k])*e1[k+1])-e2[k+1])/(delta_tau[k+1]+delta_tau[k]);
+      dm[k] = (e2[k+1] - delta_tau[k+1]*e1[k+1])/(delta_tau[k]*(delta_tau[k+1]+delta_tau[k]));
     }
 
   // Free the memory

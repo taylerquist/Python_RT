@@ -38,7 +38,7 @@ int main()
   //--------------------------------
   int i,t;   // Cell indices and counters
   int n=70;  // Number of cells
-  int N=n+1; // Number of grid points
+  //  int N=n+1; // Number of grid points
 
   double del_z = 1./float(n);     // Grid step size
   double epsilon = 0.001; // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
@@ -51,7 +51,7 @@ int main()
   ofstream data_file; // Going to be used to create an output file
 
   double *B = new double[n];       // The thermal source function (aka the Planck Function)
-  double *del_tau = new double[N]; // Change in optical depth
+  double *del_tau = new double[n]; // Change in optical depth
   double *u_p = new double[n];     // "Plus" u interpolation coefficient array (the vector going from bottom up)
   double *p_p = new double[n];     // "Plus" p interpolation coefficient array (the vector going from bottom up)
   double *d_p = new double[n];     // "Plus" d interpolation coefficient array (the vector going from bottom up)
@@ -68,20 +68,16 @@ int main()
   double *z = new double[n];       // The grid array
 
   double **lmbda_s;                // This is the lambda_star matrix
-  double **lmbda_s_S;              // This is the matrix multiplication product of the lambda_star matrix with J
-  double **J;                      // In order to do matrix multiplication, J must be a column vector
-  double **S;                      // The source function
+  double *lmbda_s_S;              // This is the matrix multiplication product of the lambda_star matrix with S
+  double *J;                      // In order to do matrix multiplication, J must be a column vector
+  double *S;                      // The source function
   lmbda_s = (double **) std::malloc(n * sizeof(double *));
-  lmbda_s_S = (double **) std::malloc(n * sizeof(double *));
-  J = (double **) std::malloc(n * sizeof(double *));
-  S = (double **) std::malloc(n * sizeof(double *));
-  for(i=0;i<n;i++)
-    {
-      lmbda_s[i] = (double *) std::malloc(n * sizeof(double));   // Lambda_star is an nxn matrix
-      lmbda_s_S[i] = (double *) std::malloc(1 * sizeof(double)); // Ends up being a column vector since nxn * nx1
-      J[i] = (double *) std::malloc(1 * sizeof(double));         // Column vector, nx1
-      S[i] = (double *) std::malloc(1 * sizeof(double));         // Column vector, nx1
-    }
+  lmbda_s_S = (double *) std::malloc(n * sizeof(double *));
+  J = (double *) std::malloc(n * sizeof(double *));
+  S = (double *) std::malloc(n * sizeof(double *));
+  for (i = 0; i < n; i++) {
+    lmbda_s[i] = (double *) std::malloc(n * sizeof(double));   // Lambda_star is an nxn matrix
+  }
 
   // Initialize the variables
   //--------------------------------
@@ -90,9 +86,9 @@ int main()
   alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));        // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
   I_plus[0] = 1.;                               // The bottom-up specific intensity
   I_minus[0] = 0.;                              // The top-down specific intensity
-  J[0][0] = 1.;                                 // The average specific intensity
-  S[0][0] = epsilon*B[0] + (1.-epsilon)*J[0][0];// The source function Ch.4 section 4.4.4, equation 4.37
-    
+  J[0] = 1.;                                 // The average specific intensity
+  S[0] = epsilon*B[0] + (1.-epsilon)*J[0];// The source function Ch.4 section 4.4.4, equation 4.37
+
   for (i=1;i<n;i++)
     {
       j = (double) (i);
@@ -101,17 +97,17 @@ int main()
       alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
       I_plus[i] = 0.;
       I_minus[i] = 0.;
-      J[i][0] = 0.;
-      S[i][0] = epsilon*B[i] + (1.-epsilon)*J[i][0];
+      J[i] = 0.;
+      S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
     }
 
   // Set other grids, interpolation coefficients, and matrices
   //----------------------------------------------------------------
   // Set the array of differences in optical depth for each cell by calling its function
-  tau_fn(del_tau,z,del_z,N);
+  tau_fn(del_tau,z,del_z,n);
 
   // Set the array of third order quadratic interpolation coefficients
-  quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,N);
+  quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 
   // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
   // Currently not working because of trouble with defining matrix in main and in function input
@@ -131,28 +127,27 @@ int main()
         {
 	  // First solve the bottom-up interpolated value of S
 	  Plus = true;
-	  S_val_plus = S_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+	  S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 	  // First solve the top-down interpolated value of S
 	  Plus = false;
-	  S_val_minus = S_interp(alpha,S,z,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+	  S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
 	  // Solve for the (interpolated) integration of the specific intensity for each ray
 	  // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
 	  I_plus[i] = exp(-del_tau[i-1]) * I_plus[i-1] + S_val_plus;
-	  I_minus[i] = exp(-del_tau[i]) * I_minus[i-1] + S_val_minus;
+	  I_minus[i] = exp(-del_tau[i]) * I_minus[i+1] + S_val_minus;
 
 	  // Update the mean specific intensity from both rays
 	  // Ch.4, section 4.4.5, equation 4.56
-	  J[i][0] = 0.5 * (I_plus[i] + I_minus[i]);
+	  J[i] = 0.5 * (I_plus[i] + I_minus[i]);
 
 	  // Solve for each component of the y array in MX = y
 	  // Ch.4, section 4.4.4, equation 4.48
 	  // *** This is where things really start to differ between the Python code ***
-	  y_arr[i] = epsilon*B[t] + (1. - epsilon) * (J[i][0] - lmbda_s_S[i][0]);
+	  y_arr[i] = epsilon*B[t] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
-      S[0][0] = 1.;
     }
 
   data_file.open("output_file.txt");
@@ -164,7 +159,7 @@ int main()
 	  data_file << epsilon;
 	  data_file << "\n";
         }
-      data_file << S[i][0];
+      data_file << S[i];
       data_file << "\n";
     }
   data_file.close();

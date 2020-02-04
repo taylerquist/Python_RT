@@ -4,9 +4,7 @@
 #include <math.h>
 #include <cmath>
 
-// Setup the source function interpolation, this includes the quadrature limiter that does not allow sources to
-// become negative (aka non-physical)
-double S_interp(double *alpha_arr, double **S_arr, double *z_arr, double *up, double *pp, double *dp,
+double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double *dp,
 		double *um, double *pm, double *dm, double delta_z, int x, bool plus)
 {
   /* Source term interpolation function that includes a maximum quadrature limiter that does not allow any source term
@@ -43,13 +41,13 @@ double S_interp(double *alpha_arr, double **S_arr, double *z_arr, double *up, do
 
   if (plus==true)
     {
-      Q_curr = up[x]*S_arr[x-1][0] + pp[x]*S_arr[x][0] + dp[x]*S_arr[x+1][0];
+      Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }
   else
     {
-      Q_curr = um[x]*S_arr[x+1][0] + pm[x]*S_arr[x][0] + dm[x]*S_arr[x-1][0];
+      Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }

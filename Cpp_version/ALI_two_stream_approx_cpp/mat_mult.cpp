@@ -4,7 +4,7 @@
 #include <math.h>
 #include <cmath>
 
-void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
+void mat_mult(double **mat_a, double *vec_b, double *mat_c, int N)
 {
   /* This is a matrix multiplication function that can multiply a matrix with a column vector that are compatible;
    * For example: mxn * nx1 is compatible but nxm * nx1 is not compatible.
@@ -27,7 +27,7 @@ void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
   // Initialize mat_c to have 0. in all elements
   for (i = 0; i < N; ++i)
     {
-      mat_c[i][0] = 0;
+      mat_c[i] = 0;
     }
 
   // Do the multiplication and find the resulting matrix
@@ -36,7 +36,7 @@ void mat_mult(double **mat_a, double **vec_b, double **mat_c, int N)
       for (k = 0; k < N; ++k)
         {
 	  // For each element mat_c[i][j] you must add the n_a multiplications
-	  mat_c[i][0] += mat_a[i][k] * vec_b[k][0];
+	  mat_c[i] += mat_a[i][k] * vec_b[k];
         }
     }
 

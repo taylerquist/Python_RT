@@ -4,6 +4,7 @@
 #include <math.h>
 #include <cmath>
 
+// Define the third order quadratic interpolation coefficients function
 void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double *dm, double *delta_tau, int N)
 {
   /* Computes the three quadratic interpolation coefficients for the bottom up and top down rays
@@ -37,7 +38,7 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
   // Now compute the actual interpolation coefficients for each ray using the constants above
   // The equations for these can be found in Ch.3, section 3.8.4, equations 3.40-3.42
   // Note that my notation has the following equivalences: u=u, v=p, w=d
-  for (k=0;k<N;k++)
+  for (k=0;k<N-1;k++)
     {
       // The coefficients for the bottom up array (I+)
       up[k] = e0[k] + (e2[k] - (2.*delta_tau[k] + delta_tau[k+1])*e1[k])/(delta_tau[k]*(delta_tau[k]+delta_tau[k+1]));

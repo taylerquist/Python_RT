@@ -6,7 +6,7 @@
 
 // The tri-diagonal matrix solver, the proof that this works for diagonally dominant and non-diagonally dominant
 // tri-diagonal is shown in a separate file.
-void tri_solver(const double *a, const double *b, const double *c, const double *y, double **X, int n)
+void tri_solver(const double *a, const double *b, const double *c, const double *y, double *X, int n)
 {
   /* Compute the array X in the equation MX = y given the lower diagonal a, diagonal
    * b, and upper diagonal c of matrix M_star
@@ -69,12 +69,12 @@ void tri_solver(const double *a, const double *b, const double *c, const double 
       } else if (i == n - 1)
       {
 	y_prime[i] = (y[i] - a[i] * y_prime[i - 1]) / (b[i] - a[i] * c_prime[i - 1]);
-	X[i][0] = y_prime[i];
+	X[i] = y_prime[i];
       }
   }
   for (i = n - 2; i >= 0; i--)
     {
-      X[i][0] = y_prime[i] - c_prime[i] * X[i + 1][0];
+      X[i] = y_prime[i] - c_prime[i] * X[i + 1];
     }
 
   // Free the memory
