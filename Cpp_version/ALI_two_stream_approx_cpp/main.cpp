@@ -81,13 +81,13 @@ int main()
 
   // Initialize the variables
   //--------------------------------
-  z[0] = 0.;                                    // The grid increases by step size del_z and goes from 0 to 1
-  B[0] = 1.;                                    // The thermal source function in this example is constant in this example
-  alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));        // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
-  I_plus[0] = 1.;                               // The bottom-up specific intensity
-  I_minus[0] = 0.;                              // The top-down specific intensity
+  z[0] = 0.;                                 // The grid increases by step size del_z and goes from 0 to 1
+  B[0] = 1.;                                 // The thermal source function in this example is constant in this example
+  alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));     // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
+  I_plus[0] = 1.;                            // The bottom-up specific intensity
+  I_minus[0] = 0.;                           // The top-down specific intensity
   J[0] = 1.;                                 // The average specific intensity
-  S[0] = epsilon*B[0] + (1.-epsilon)*J[0];// The source function Ch.4 section 4.4.4, equation 4.37
+  S[0] = epsilon*B[0] + (1.-epsilon)*J[0];   // The source function Ch.4 section 4.4.4, equation 4.37
 
   for (i=1;i<n;i++)
     {
@@ -105,24 +105,38 @@ int main()
   //----------------------------------------------------------------
   // Set the array of differences in optical depth for each cell by calling its function
   tau_fn(del_tau,z,del_z,n);
+  //for(int k=0;k<n;k++)
+  //{
+  //    printf("k %d, tau %2.5f\n",k,del_tau[k]);
+  //}
 
   // Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
-
+    
   // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
   // Currently not working because of trouble with defining matrix in main and in function input
   matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
 
   // Solve for converged S
-  // The 1D diffusion equation is a 2nd order PDE where lambda_star*S is the solution
+  // The 1D diffusion equation is a 2nd order PDE where lambda_star*
+  // S is the solution
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0; t < 101; t++)
+  for (t = 0; t < 3; t++)
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
+      //for(int k=0;k<n;k++)
+      //{
+      //    printf("diag %2.5f, u_diag %2.5f\n",lmbda_s[k][k+1],lmbda_s[k][k]);
+      //}
       mat_mult(lmbda_s,S,lmbda_s_S,n);
+      for(int k=0;k<n;k++)
+        {
+	  printf("J %2.5f\n, L_S %2.5f\n",J[k],lmbda_s_S[k]);
+        }
+      printf("----------------------\n");
       for (i = 1; i < n-1; i++)
         {
 	  // First solve the bottom-up interpolated value of S
@@ -150,6 +164,11 @@ int main()
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
     }
+
+  //for(int k=0;k<n;k++)
+  //{
+  //    printf("S %2.5f\n",S[k]);
+  //}
 
   data_file.open("output_file.txt");
   for (i = 0; i < n; ++i)
@@ -188,6 +207,5 @@ int main()
   delete[](z);
 
   printf("done \n");
-
   return 0;
 }

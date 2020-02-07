@@ -140,6 +140,7 @@ int main()
 	  // Update the mean specific intensity from both rays
 	  // Ch.4, section 4.4.5, equation 4.56
 	  J[i] = 0.5 * (I_plus[i] + I_minus[i]);
+	  J[0] = 1.;
 
 	  // Solve for each component of the y array in MX = y
 	  // Ch.4, section 4.4.4, equation 4.48
