@@ -15,30 +15,28 @@ j = -1
 # As well as re-calculating the z_arr
 for i in s:
     if (j == -1):
-        x.append(float(i))
+        # Epsilon for the problem will always be the first value in the .txt file 
+        epsilon = float(i)
+    elif (i == 'break'):
+        # Define/Re-define plotting arrays
+        x_arr = np.array(x)
+        z_arr = x_arr/(len(x_arr)-1.)
+        y_arr = np.array(y)
+        plt.plot(z_arr,y_arr,color='k')
+        # Reset x and y lists
+        x = []
+        y = []
+        # Reset the placement counter considering +1 is added this iteration
+        j = -1
     else:
-        x.append(float(i))
-        y.append(float(j))
+        x.append(float(j))
+        y.append(float(i))
     j += 1
 
-# Epsilon for the problem will always be the first value in the .txt file
-epsilon = x[0]
-
-# Make these numpy arrays so they can be used more easily
-x = np.array(x[1:])
-y = np.array(y)
-# Normalize the y array to get back z_arr
-z = y/(len(y)-1.)
-
-#print(x)
-#print(z)
-
-# Plot it
-#plt.semilogy(z,x)
-plt.plot(z,x)
+# Should have plotted all the lines together
 plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
 plt.xlabel("z")
 plt.ylabel("S/B")
-plt.ylim(0.1,1.01)
+plt.ylim(0.1,1.1)
 plt.xlim(-0.01,1.0)
 plt.show()

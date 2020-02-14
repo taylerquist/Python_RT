@@ -30,26 +30,26 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
   // Ch.3 section 3.8.4, equations 3.43-3.45
   for (k=0;k<N;k++)
     {
-      e0[k] = 1. - exp(-delta_tau[k]);
-      e1[k] = delta_tau[k] - e0[k];
-      e2[k] = pow(delta_tau[k],2.) - (2.*e1[k]);
+      e0[k] = 1. - exp(-delta_tau[k+1]);
+      e1[k] = delta_tau[k+1] - e0[k];
+      e2[k] = pow(delta_tau[k+1],2.) - (2.*e1[k]);
     }
 
   // Now compute the actual interpolation coefficients for each ray using the constants above
   // The equations for these can be found in Ch.3, section 3.8.4, equations 3.40-3.42
   // Note that my notation has the following equivalences: u=u, v=p, w=d
-  for (k=0;k<N-1;k++)
+  for (k=1;k<N-1;k++)
     {
       // The coefficients for the bottom up array (I+)
-      up[k] = e0[k] + (e2[k] - (2.*delta_tau[k] + delta_tau[k+1])*e1[k])/(delta_tau[k]*(delta_tau[k]+delta_tau[k+1]));
-      pp[k] = (((delta_tau[k]+delta_tau[k+1])*e1[k])-e2[k])/(delta_tau[k]+delta_tau[k+1]);
-      dp[k] = (e2[k] - delta_tau[k]*e1[k])/(delta_tau[k+1]*(delta_tau[k]+delta_tau[k+1]));
-
+      dp[k] = e0[k-1] + (e2[k-1] - (2.*delta_tau[k] + delta_tau[k+1])*e1[k-1])/(delta_tau[k]*(delta_tau[k]+
+											      delta_tau[k+1]));
+      pp[k] = (((delta_tau[k]+delta_tau[k+1])*e1[k-1])-e2[k-1])/(delta_tau[k]*delta_tau[k+1]);
+      up[k] = (e2[k-1] - delta_tau[k]*e1[k-1])/(delta_tau[k+1]*(delta_tau[k]+delta_tau[k+1]));
       // The coefficients for the top down array (I-)
-      um[k] = e0[k+1] + (e2[k+1] - (2.*delta_tau[k+1] + delta_tau[k])*e1[k+1])/(delta_tau[k+1]*(delta_tau[k+1]+
-												delta_tau[k]));
-      pm[k] = (((delta_tau[k+1]+delta_tau[k])*e1[k+1])-e2[k+1])/(delta_tau[k+1]+delta_tau[k]);
-      dm[k] = (e2[k+1] - delta_tau[k+1]*e1[k+1])/(delta_tau[k]*(delta_tau[k+1]+delta_tau[k]));
+      dm[k] = e0[k+1] + (e2[k+1] - (2.*delta_tau[k] + delta_tau[k+1])*e1[k+1])/(delta_tau[k]*(delta_tau[k+1]+
+											      delta_tau[k]));
+      pm[k] = (((delta_tau[k+1]+delta_tau[k])*e1[k+1])-e2[k+1])/(delta_tau[k+1]*delta_tau[k]);
+      um[k] = (e2[k+1] - delta_tau[k]*e1[k+1])/(delta_tau[k+1]*(delta_tau[k+1]+delta_tau[k]));
     }
 
   // Free the memory

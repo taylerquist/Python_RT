@@ -30,14 +30,14 @@ y = np.array(y)
 # Normalize the y array to get back z_arr
 z = y/(len(y)-1.)
 
-print(x)
-print(z)
+#print(x)
+#print(z)
 
 # Plot it
 plt.semilogy(z,x)
 plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
 plt.xlabel("z")
 plt.ylabel("S/B")
-plt.ylim(0.0001,1.2)
+plt.ylim(0.1,1.01)
 plt.xlim(-0.01,1.0)
 plt.show()
