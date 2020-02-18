@@ -37,16 +37,16 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
    * The final value of the source term interpolation is determined by equation 3.46, section 3.8.4, Ch.3
    * S_int = max(min(Q_curr[x],Q_max[x]),0.) */
 
-  Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
-
   if (plus==true)
     {
+      Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
       Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }
   else
     {
+      Q_max = 0.5*(alpha_arr[x] + alpha_arr[x+1])*delta_z;
       Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);

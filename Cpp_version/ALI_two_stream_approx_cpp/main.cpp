@@ -32,8 +32,11 @@ using std::ofstream;
  * |...  ...  a[n-1] b[n-1] |
  * Note: a[0] = 0 and c[n-1] = 0 */
 
+
 // Uncomment this if using ALI
+//-------------------------------
 //#define ALI
+//-------------------------------
 
 int main()
 {
@@ -116,6 +119,9 @@ int main()
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 
 #ifdef ALI
+  data_file.open("output_file.txt");
+  data_file << epsilon;
+  data_file << "\n";
   // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
   // Currently not working because of trouble with defining matrix in main and in function input
   matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
@@ -126,7 +132,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0; t < 3; t++)
+  for (t = 0; t < 102; t++)
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
@@ -140,7 +146,7 @@ int main()
       //    printf("J %2.5f\n, L_S %2.5f\n",J[k],lmbda_s_S[k]);
       //}
       //printf("----------------------\n");
-      for (i = 1; i < n-1; i++)
+      for (i = 1; i < n; i++)
         {
 	  // First solve the bottom-up interpolated value of S
 	  Plus = true;
@@ -151,8 +157,8 @@ int main()
 
 	  // Solve for the (interpolated) integration of the specific intensity for each ray
 	  // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
-	  I_plus[i] = exp(-del_tau[i-1]) * I_plus[i-1] + S_val_plus;
-	  I_minus[i] = exp(-del_tau[i]) * I_minus[i+1] + S_val_minus;
+	  I_plus[i] = exp(-del_tau[i]) * I_plus[i-1] + S_val_plus;
+	  I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
 
 	  // Update the mean specific intensity from both rays
 	  // Ch.4, section 4.4.5, equation 4.56
@@ -163,10 +169,34 @@ int main()
 	  // Ch.4, section 4.4.4, equation 4.48
 	  // *** This is where things really start to differ between the Python code ***
 	  y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
+	  
+	  // Write S to the file for plotting                                                                                                                            
+	  // Only write to the file after the first updated iteration
+	  if (t>0)
+	    {	  
+	      if (i==1)
+		{
+		  data_file << S[0];
+		  data_file << "\n";
+		}
+	      else if (i==n-1)
+		{
+		  data_file << S[i];
+		  data_file << "\n";
+		  data_file << "break\n";
+		}
+	      else
+		{
+		  data_file << S[i];
+		  data_file << "\n";
+		}
+	    }
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
+      S[0] = epsilon * B[0] + (1. - epsilon) * J[0];
     }
+  data_file.close();
 #else
   data_file.open("output_file.txt");
   data_file << epsilon;
@@ -182,8 +212,8 @@ int main()
 
       // Solve for the (interpolated) integration of the specific intensity for each ray
       // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
-      I_plus[i] = exp(-del_tau[i+1]) * I_plus[i+1] + S_val_plus;
-      I_minus[i] = exp(-del_tau[i]) * I_minus[i-1] + S_val_minus;
+      I_plus[i] = exp(-del_tau[i]) * I_plus[i-1] + S_val_plus;
+      I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
 
       // Update the mean specific intensity from both rays
       // Ch.4, section 4.4.5, equation 4.56
@@ -206,10 +236,6 @@ int main()
 	data_file << "\n";
       }
     }
-    // Update S
-    //for (i = 0; i < n; ++i) {
-    //    S[i] = epsilon * B[i] + (1. - epsilon) * J[i];
-    //}
   }
   data_file.close();
 #endif

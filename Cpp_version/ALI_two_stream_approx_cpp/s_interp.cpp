@@ -40,14 +40,16 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
   if (plus==true)
     {
       Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
-      Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
+      //      Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
+      Q_curr = dp[x]*S_arr[x-1] + pp[x]*S_arr[x] + up[x]*S_arr[x+1]; 
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }
   else
     {
       Q_max = 0.5*(alpha_arr[x] + alpha_arr[x+1])*delta_z;
-      Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
+      //Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
+      Q_curr = dm[x]*S_arr[x+1] + pm[x]*S_arr[x] + um[x]*S_arr[x-1]; 
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }

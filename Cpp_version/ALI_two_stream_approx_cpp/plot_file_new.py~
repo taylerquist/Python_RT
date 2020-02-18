@@ -22,7 +22,12 @@ for i in s:
         x_arr = np.array(x)
         z_arr = x_arr/(len(x_arr)-1.)
         y_arr = np.array(y)
-        plt.plot(z_arr,y_arr,color='k')
+        if (epsilon == 0.1 or epsilon == 0.01):
+#            plt.plot(z_arr,y_arr,color='k')
+            plt.plot(z_arr,y_arr,color='seagreen')
+        else:
+#            plt.semilogy(z_arr,y_arr,color='k')
+            plt.semilogy(z_arr,y_arr,color='seagreen')
         # Reset x and y lists
         x = []
         y = []
@@ -34,9 +39,15 @@ for i in s:
     j += 1
 
 # Should have plotted all the lines together
-plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
+#plt.title("S/B vs z, epsilon=%1.3f" %epsilon)
+plt.title("ALI Scheme: S/B vs z, epsilon=%1.3f" %epsilon)
 plt.xlabel("z")
 plt.ylabel("S/B")
-plt.ylim(0.1,1.1)
-plt.xlim(-0.01,1.0)
+plt.xlim(0.0,1.0)
+if (epsilon == 0.1):
+    plt.ylim(0.1,1.1)
+elif (epsilon == 0.01):
+    plt.ylim(0.,1.1)
+else:
+    plt.ylim(0.001,1.0)
 plt.show()
