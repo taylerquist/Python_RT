@@ -24,7 +24,7 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
    * Output
    * ------
    * S_int: The value of the interpolated source function for either the I+ or I- array at grid location x,
-   *        from z[x], double precision, single value */
+   * from z[x], double precision, single value */
 
   double Q_max;  // This is the upper value of the limiter
   double Q_curr; // This is the value of the interpolation using the coefficients ane S_arr
@@ -39,17 +39,21 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
 
   if (plus==true)
     {
+      // Set an upper, positive limit using the extinction coefficient
       Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
-      //      Q_curr = up[x]*S_arr[x-1] + pp[x]*S_arr[x] + dp[x]*S_arr[x+1];
+      // Look at the current value of the interpolation
       Q_curr = dp[x]*S_arr[x-1] + pp[x]*S_arr[x] + up[x]*S_arr[x+1]; 
+      // Choose a non-negative source funciton value
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }
   else
     {
+      // Set an upper, positive limit using the extinction coefficient 
       Q_max = 0.5*(alpha_arr[x] + alpha_arr[x+1])*delta_z;
-      //Q_curr = um[x]*S_arr[x+1] + pm[x]*S_arr[x] + dm[x]*S_arr[x-1];
+      // Look at the current value of the interpolation 
       Q_curr = dm[x]*S_arr[x+1] + pm[x]*S_arr[x] + um[x]*S_arr[x-1]; 
+      // Choose a non-negative source funciton value 
       S_int = fmax(fmin(Q_curr,Q_max),0.);
       return (S_int);
     }

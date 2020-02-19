@@ -25,7 +25,7 @@ void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, cons
    * m_c = upper diagonal of the M_star matrix, double precision, size n */
 
   int k;  // Cell index
-  double *lambda_a, *lambda_b, *lambda_c;
+  double *lambda_a, *lambda_b, *lambda_c; // Lambda star diagonals
 
   lambda_a = (double *) calloc(n, sizeof(double)); // Temporary lower diagonal
   lambda_b = (double *) calloc(n, sizeof(double)); // Temporary diagonal

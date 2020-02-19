@@ -4,8 +4,9 @@
 #include <math.h>
 #include <cmath>
 
-void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, double *up, double *pp, double *dp,
-		  double *um, double *pm, double *dm, double eps, int n)
+// Set the Lambda_star matrix and M_star matrix tri-diagonal components
+void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, const double *up, const double *pp,
+                  const double *dp, double *um, double *pm, double *dm, double eps, int n)
 {
   /* This will compute the lambda_star matrix and M_star lower and upper diagonals and the diagonal.
    *
@@ -51,7 +52,7 @@ void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, doub
 	  m_c[k] = -(1. - eps)*lambda_c[k];
 	  // Lambda_star matrix
 	  lambda_s[k][k] = lambda_b[k];
-	  lambda_s[k+1][k] = lambda_c[k];
+	  lambda_s[k][k+1] = lambda_c[k];
         }
       else if (k==n-1)
         {
@@ -64,7 +65,7 @@ void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, doub
 	  m_b[k] = 1. - (1. - eps)*lambda_b[k];
 	  m_c[k] = 0.;
 	  // Lambda_star matrix
-	  lambda_s[k-1][k] = lambda_a[k];
+	  lambda_s[k][k-1] = lambda_a[k];
 	  lambda_s[k][k] = lambda_b[k];
         }
       else
@@ -78,14 +79,13 @@ void matrix_build(double **lambda_s, double *m_a, double *m_b, double *m_c, doub
 	  m_b[k] = 1. - (1. - eps)*lambda_b[k];
 	  m_c[k] = -(1. - eps)*lambda_c[k];
 	  // Lambda_star matrix
-	  lambda_s[k-1][k] = lambda_a[k];
+	  lambda_s[k][k-1] = lambda_a[k];
 	  lambda_s[k][k] = lambda_b[k];
-	  lambda_s[k+1][k] = lambda_c[k];
+	  lambda_s[k][k+1] = lambda_c[k];
         }
     }
 
   free(lambda_a);
   free(lambda_b);
   free(lambda_c);
-  // All components of lambda_star and M_star have been found
 }

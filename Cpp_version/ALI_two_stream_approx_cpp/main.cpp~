@@ -46,7 +46,7 @@ int main()
   int n=70;  // Number of cells
 
   double del_z = 1./float(n); // Grid step size
-  double epsilon = 0.001;       // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
+  double epsilon = 0.1;       // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
   double j;                   // Double precision counter
   double S_val_plus;          // Double precision value for the S interpolation used to solve for I+
   double S_val_minus;         // Double precision value for the S interpolation used to solve for I-

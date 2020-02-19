@@ -110,18 +110,16 @@ int main()
   //----------------------------------------------------------------
   // Set the array of differences in optical depth for each cell by calling its function
   tau_fn(del_tau,z,del_z,n);
-  //for(int k=0;k<n;k++)
-  //{
-  //    printf("k %d, tau %2.5f\n",k,del_tau[k]);
-  //}
 
   // Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 
 #ifdef ALI
+  // Open the file to write to and save epsilon
   data_file.open("output_file.txt");
   data_file << epsilon;
   data_file << "\n";
+
   // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
   // Currently not working because of trouble with defining matrix in main and in function input
   matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
@@ -136,16 +134,7 @@ int main()
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
-      //for(int k=0;k<n;k++)
-      //{
-      //    printf("diag %2.5f, u_diag %2.5f\n",lmbda_s[k][k+1],lmbda_s[k][k]);
-      //}
       mat_mult(lmbda_s,S,lmbda_s_S,n);
-      //for(int k=0;k<n;k++)
-      //{
-      //    printf("J %2.5f\n, L_S %2.5f\n",J[k],lmbda_s_S[k]);
-      //}
-      //printf("----------------------\n");
       for (i = 1; i < n; i++)
         {
 	  // First solve the bottom-up interpolated value of S
@@ -163,11 +152,9 @@ int main()
 	  // Update the mean specific intensity from both rays
 	  // Ch.4, section 4.4.5, equation 4.56
 	  J[i] = 0.5 * (I_plus[i] + I_minus[i]);
-	  //J[0] = 1.;
 
 	  // Solve for each component of the y array in MX = y
 	  // Ch.4, section 4.4.4, equation 4.48
-	  // *** This is where things really start to differ between the Python code ***
 	  y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
 	  
 	  // Write S to the file for plotting                                                                                                                            
