@@ -49,5 +49,5 @@ if (epsilon == 0.1):
 elif (epsilon == 0.01):
     plt.ylim(0.,1.1)
 else:
-    plt.ylim(0.001,1.0)
+    plt.ylim(0.001,1.1)
 plt.show()

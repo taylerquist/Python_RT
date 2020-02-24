@@ -12,6 +12,7 @@
 #include "mat_mult.h"
 
 using std::ofstream;
+using namespace std;
 
 // ALI numerical algorithm for the two stream approximation
 /* Notes references
@@ -34,26 +35,38 @@ using std::ofstream;
 
 
 // Uncomment this if using ALI
-//-------------------------------
-//#define ALI
+#define ALI
+
+// Uncomment if reading in IC from a txt file
+//#define read_in_IC
+
+// Uncomment if writing final conditions to a txt file
+//#define write_outfile
+
 //-------------------------------
 
 int main()
 {
   // Allocate the variables
   //--------------------------------
-  int i,t;   // Cell indices and counters
+  int i,y;   // Cell indices and counters
   int n=70;  // Number of cells
+  int index; // To keep track of values while reading in a file
 
   double del_z = 1./float(n); // Grid step size
-  double epsilon = 0.1;       // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
+  double epsilon = 0.001;       // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
   double j;                   // Double precision counter
   double S_val_plus;          // Double precision value for the S interpolation used to solve for I+
   double S_val_minus;         // Double precision value for the S interpolation used to solve for I-
 
+  double s; // Used for reading values in a file
+
   bool Plus; // The boolean used for interpolation of the source function S
 
   ofstream data_file; // Going to be used to create an output file
+  ofstream I_p_outfile;   // Going to be used to create an output file that saves current state of dynamics
+  ofstream I_m_outfile;   // Going to be used to create an output file that saves current state of dynamics
+  ifstream inFile;    // Going to be used to read in the state of dynamics
 
   double *B = new double[n];       // The thermal source function (aka the Planck Function)
   double *del_tau = new double[n]; // Change in optical depth
@@ -85,7 +98,54 @@ int main()
   }
 
   // Initialize the variables
-  //--------------------------------
+
+#ifdef read_in_IC
+
+  // Open the first file
+  inFile.open("I_p_output_IC.txt");
+  if (!inFile)
+    {
+      cerr << "I_p_output_IC.txt does not exist!"; // Tell the user what happened
+      exit(1); // Stop the system
+    }
+
+  index = 0;
+  while (inFile >> s)
+    {
+      I_plus[index] = s; // Read in specific intensity, bottom up array
+      index = index + 1;
+    }
+  inFile.close();
+
+  // Open the second file                                                                                                                                                                                           
+  inFile.open("I_m_output_IC.txt");
+  if (!inFile)
+    {
+      cerr << "I_m_output_IC.txt does not exist!"; // Tell the user what happened                                                                                                                                  
+      exit(1); // Stop the system                                                                                                                                                                                   
+    }
+  index = 0;
+  while (inFile >> s)
+    {
+      I_minus[index] = s; // Read in specific intensity, top down array                                                                                                                                             
+      index = index + 1;
+    }
+  inFile.close();
+
+  // Set the rest of the variables
+  for (i=0;i<n;i++)
+    {
+      j = (double) (i);
+      z[i] = j*del_z;
+      B[i] = 1.;
+      alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
+      J[i] = 0.5*(I_plus[i]+I_minus[i]);
+      S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+    }
+
+  //printf("I+ %2.5f\n",I_plus[0]);
+  // If the initial conditions are not going to be manually set
+#else
   z[0] = 0.;                                 // The grid increases by step size del_z and goes from 0 to 1
   B[0] = 1.;                                 // The thermal source function in this example is constant in this example
   alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));     // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
@@ -105,6 +165,7 @@ int main()
       J[i] = 0.;
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
     }
+#endif
 
   // Set other grids, interpolation coefficients, and matrices
   //----------------------------------------------------------------
@@ -130,7 +191,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0; t < 102; t++)
+  for (y = 0; y < 102; y++)
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time
@@ -157,9 +218,10 @@ int main()
 	  // Ch.4, section 4.4.4, equation 4.48
 	  y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
 	  
+	  S[0] = epsilon * B[0] + (1. - epsilon) * J[0];
 	  // Write S to the file for plotting                                                                                                                            
 	  // Only write to the file after the first updated iteration
-	  if (t>0)
+	  if (y>0)
 	    {	  
 	      if (i==1)
 		{
@@ -230,6 +292,20 @@ int main()
     {
       printf("S %2.5f\n",S[k]);
     }
+
+  // Write final values of I+ and I- to different output files to read in later
+#ifdef write_outfile
+  I_p_outfile.open("I_p_output_IC.txt");
+  I_m_outfile.open("I_m_output_IC.txt");
+  for (i = 0; i < n; i++) {
+    I_p_outfile << I_plus[i];
+    I_p_outfile << "\n";
+    I_m_outfile << I_minus[i];
+    I_m_outfile << "\n";
+  }
+  I_p_outfile.close();
+  I_m_outfile.close();
+#endif
 
   // Free the memory
   free(lmbda_s);
