@@ -6,7 +6,8 @@
 #include <fstream>
 #include "tau_fn.h"
 #include "quad_int.h"
-#include "matrix_build.h"
+//#include "matrix_build.h"
+#include "matrix_build_vector.h"
 #include "s_interp.h"
 #include "tri_solver.h"
 #include "mat_mult.h"
@@ -34,16 +35,24 @@ using namespace std;
  * Note: a[0] = 0 and c[n-1] = 0 */
 
 
-// Uncomment this if using ALI
-#define ALI
+// Uncomment this if using ALI with constant epsilon  and B
+//#define ALI
 
-// Uncomment if reading in IC from a txt file
-#define read_in_IC
+// Uncomment if epsilon and B are constant and ICs are not getting read in
+//#define reg_IC
 
-// Uncomment if writing final conditions to a txt file
+// Uncomment if no lambda acceleration is to be  used
+//#define strict_solver
+
+// Uncomment if the ICs are going to be read  in from a file
+//#define read_in_IC
+
+// Uncomment if the final state of the solver is to be saved (and later set as  ICs)
 //#define write_outfile
 
-//-------------------------------
+// Uncomment if epsilon and/or B are varying across the grid or with time
+// Automatically uses the ALI scheme to solve
+#define vary_eps
 
 int main()
 {
@@ -54,7 +63,6 @@ int main()
   int index; // To keep track of values while reading in a file
 
   double del_z = 1./float(n); // Grid step size
-  double epsilon = 0.001;       // Photon destruction probability should be equal to 0.1, 0.001, or 0.0001
   double j;                   // Double precision counter
   double S_val_plus;          // Double precision value for the S interpolation used to solve for I+
   double S_val_minus;         // Double precision value for the S interpolation used to solve for I-
@@ -76,6 +84,12 @@ int main()
   double *u_m = new double[n];     // "Minus" u interpolation coefficient array (the vector going from top down)
   double *p_m = new double[n];     // "Minus" p interpolation coefficient array (the vector going from top down)
   double *d_m = new double[n];     // "Minus" d interpolation coefficient array (the vector going from top down)
+  double *alpha_p = new double[n]; // "Plus" alpha interpolation coefficient array (the vector going from bottom up)
+  double *beta_p = new double[n];  // "Plus" beta interpolation coefficient array (the vector going from bottom up)
+  double *gamma_p = new double[n]; // "Plus" gamma interpolation coefficient array (the vector going from bottom up)
+  double *alpha_m = new double[n]; // "Minus" alpha interpolation coefficient array (the vector going from top down)
+  double *beta_m = new double[n];  // "Minus" beta interpolation coefficient array (the vector going from top down)
+  double *gamma_m = new double[n]; // "Minus" gamma interpolation coefficient array (the vector going from top down)
   double *M_a = new double[n];     // Lower diagonal of the matrix M_star
   double *M_b = new double[n];     // Diagonal of the matrix M_star
   double *M_c = new double[n];     // Upper diagonal of the matrix M_star
@@ -86,19 +100,42 @@ int main()
   double *z = new double[n];       // The grid array
 
   double **lmbda_s;                // This is the lambda_star matrix
-  double *lmbda_s_S;              // This is the matrix multiplication product of the lambda_star matrix with S
-  double *J;                      // In order to do matrix multiplication, J must be a column vector
-  double *S;                      // The source function
+  double *lmbda_s_S;               // This is the matrix multiplication product of the lambda_star matrix with S
+  double *J;                       // Mean specific intensity, 1xn
+  double *S;                       // The source function, 1xn
   lmbda_s = (double **) std::malloc(n * sizeof(double *));
   lmbda_s_S = (double *) std::malloc(n * sizeof(double *));
   J = (double *) std::malloc(n * sizeof(double *));
   S = (double *) std::malloc(n * sizeof(double *));
   for (i = 0; i < n; i++) {
-    lmbda_s[i] = (double *) std::malloc(n * sizeof(double));   // Lambda_star is an nxn matrix
+    lmbda_s[i] = (double *) std::malloc(n * sizeof(double)); // Lambda_star is an nxn matrix
   }
+
+  // Below determines if epsilon (photon destruction probability) will be held constant
+  // throughout the grid or if it spatially varies
+#ifdef vary_eps
+
+  double l_bndry_eps = 0.001;       // Left boundary for epsilon grid (epsilon at z=0)
+  double r_bndry_eps = 0.1;         // Right boundary for epsilon grid (epsilon at z=1)
+  double del_eps;                   // The amount epsilon changes for every grid point
+  double *eps_grid = new double[n]; // Actual grid of epsilon values
+
+  // Set the spatially varying epsilon values
+  del_eps = (l_bndry_eps/r_bndry_eps)*(1./float(n-1));
+  eps_grid[0] = l_bndry_eps;
+  for (i=1;i<n;i++)
+    {
+      eps_grid[i] = l_bndry_eps/(del_eps*float(i));
+    }
+#else
+  double epsilon; // Photon destruction probability
+  epsilon = 0.1;
+#endif
+
 
   // Initialize the variables
 
+  // If the initial conditions are being read in from an output file
 #ifdef read_in_IC
 
   // Open the first file
@@ -117,22 +154,21 @@ int main()
     }
   inFile.close();
 
-  // Open the second file                                                                                                                                                                                           
+  // Open the second file
   inFile.open("I_m_output_IC.txt");
   if (!inFile)
     {
-      cerr << "I_m_output_IC.txt does not exist!"; // Tell the user what happened                                                                                                                                  
-      exit(1); // Stop the system                                                                                                                                                                                   
+      cerr << "I_m_output_IC.txt does not exist!"; // Tell the user what happened
+      exit(1); // Stop the system
     }
   index = 0;
   while (inFile >> s)
     {
-      I_minus[index] = s; // Read in specific intensity, top down array                                                                                                                                             
+      I_minus[index] = s; // Read in specific intensity, top down array
       index = index + 1;
     }
   inFile.close();
 
-  // Set the rest of the variables
   for (i=0;i<n;i++)
     {
       j = (double) (i);
@@ -142,12 +178,32 @@ int main()
       J[i] = 0.5*(I_plus[i]+I_minus[i]);
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
     }
+#endif
 
-  //printf("I+ %2.5f\n",I_plus[0]);
+#ifdef vary_eps
+  for (i=0;i<n;i++)
+    {
+      j = (double) (i);
+      z[i] = j*del_z;
+      B[i] = 1.;
+      alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
+      I_plus[i] = 0.;
+      I_minus[i] = 0.;
+      J[i] = 0.5*(I_plus[i]+I_minus[i]);
+      if (i==0)
+	{
+	  I_plus[0] = 1.;
+	  J[0] = 1.;
+	}
+      S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
+    }
+
   // If the initial conditions are not going to be manually set
-#else
+#endif
+
+#ifdef reg_IC
   z[0] = 0.;                                 // The grid increases by step size del_z and goes from 0 to 1
-  B[0] = 1.;                                 // The thermal source function in this example is constant in this example
+  B[0] = 1.;                                 // The thermal source function in this example is constant
   alpha[0] = B[0]*pow(10.,(5.-6.*z[i]));     // The emissivity, depends on z Ch.4, section 4.4.2, equation 4.32
   I_plus[0] = 1.;                            // The bottom-up specific intensity
   I_minus[0] = 0.;                           // The top-down specific intensity
@@ -175,8 +231,84 @@ int main()
   // Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 
+#ifdef vary_eps
+  // Open the file to write to and save the left (and right) boundary epsilon value and delta epsilon
+  // for plotting purposes
+  data_file.open("output_file.txt");
+  data_file << l_bndry_eps;
+  data_file << "\n";
+  data_file << r_bndry_eps;
+  data_file << "\n";
+  data_file << del_eps;
+  data_file << "\n";
+
+  // Solve for converged S
+  // The 1D diffusion equation is a 2nd order PDE where lambda_star*
+  // S is the solution
+  // The numerical representation used for this PDE is Central Space
+  // Forward substitution + backward substitution are used to solve the PDE
+  //--------------------------
+  for (y = 0; y < 102; y++)
+    {
+      // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
+      matrix_build_vector(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,eps_grid,n);
+
+      // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
+      // It needs to be used in the next loop but it does not need to be re-calculated every time
+      mat_mult(lmbda_s,S,lmbda_s_S,n);
+      for (i = 1; i < n; i++)
+        {
+          // First solve the bottom-up interpolated value of S
+          Plus = true;
+          S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+          // First solve the top-down interpolated value of S
+          Plus = false;
+          S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+
+          // Solve for the (interpolated) integration of the specific intensity for each ray
+          // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
+          I_plus[i] = exp(-del_tau[i]) * I_plus[i-1] + S_val_plus;
+          I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
+
+          // Update the mean specific intensity from both rays
+          // Ch.4, section 4.4.5, equation 4.56
+          J[i] = 0.5 * (I_plus[i] + I_minus[i]);
+
+          // Solve for each component of the y array in MX = y
+          // Ch.4, section 4.4.4, equation 4.48
+          y_arr[i] = eps_grid[i]*B[i] + (1. - eps_grid[i]) * (J[i] - lmbda_s_S[i]);
+
+          // Write S to the file for plotting
+          // Only write to the file after the first updated iteration
+          if (y>0)
+            {
+              if (i==1)
+                {
+                  data_file << S[0];
+                  data_file << "\n";
+                }
+	      else if (i==n-1)
+                {
+                  data_file << S[i];
+                  data_file << "\n";
+                  data_file << "break\n";
+                }
+              else
+                {
+                  data_file << S[i];
+                  data_file << "\n";
+                }
+            }
+        }
+      // Now use the tri-diagonal solver to actually update S
+      tri_solver(M_a,M_b,M_c,y_arr,S,n);
+      S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
+    }
+  data_file.close();
+#endif
+
 #ifdef ALI
-  // Open the file to write to and save epsilon
+  // Open the file to write to and save epsilon, even if it spatially varies
   data_file.open("output_file.txt");
   data_file << epsilon;
   data_file << "\n";
@@ -198,56 +330,55 @@ int main()
       mat_mult(lmbda_s,S,lmbda_s_S,n);
       for (i = 1; i < n; i++)
         {
-	  // First solve the bottom-up interpolated value of S
-	  Plus = true;
-	  S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
-	  // First solve the top-down interpolated value of S
-	  Plus = false;
-	  S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+          // First solve the bottom-up interpolated value of S
+          Plus = true;
+          S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
+          // First solve the top-down interpolated value of S
+          Plus = false;
+          S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,del_z,i,Plus);
 
-	  // Solve for the (interpolated) integration of the specific intensity for each ray
-	  // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
-	  I_plus[i] = exp(-del_tau[i]) * I_plus[i-1] + S_val_plus;
-	  I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
+          // Solve for the (interpolated) integration of the specific intensity for each ray
+          // The equations for this come from Ch.4, section 4.4.5, equations 4.53 and 4.54
+          I_plus[i] = exp(-del_tau[i]) * I_plus[i-1] + S_val_plus;
+          I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
 
-	  // Update the mean specific intensity from both rays
-	  // Ch.4, section 4.4.5, equation 4.56
-	  J[i] = 0.5 * (I_plus[i] + I_minus[i]);
+          // Update the mean specific intensity from both rays
+          // Ch.4, section 4.4.5, equation 4.56
+          J[i] = 0.5 * (I_plus[i] + I_minus[i]);
 
-	  // Solve for each component of the y array in MX = y
-	  // Ch.4, section 4.4.4, equation 4.48
-	  y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
-	  
-	  S[0] = epsilon * B[0] + (1. - epsilon) * J[0];
-	  //printf("J %2.5f\n",J[0]);
-	  // Write S to the file for plotting                                                                                                                            
-	  // Only write to the file after the first updated iteration
-	  if (y>0)
-	    {	  
-	      if (i==1)
-		{
-		  data_file << S[0];
-		  data_file << "\n";
-		}
+          // Solve for each component of the y array in MX = y
+          // Ch.4, section 4.4.4, equation 4.48
+          y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
+
+          // Write S to the file for plotting
+          // Only write to the file after the first updated iteration
+          if (y>0)
+            {
+              if (i==1)
+                {
+                  data_file << S[0];
+                  data_file << "\n";
+                }
 	      else if (i==n-1)
-		{
-		  data_file << S[i];
-		  data_file << "\n";
-		  data_file << "break\n";
-		}
-	      else
-		{
-		  data_file << S[i];
-		  data_file << "\n";
-		}
-	    }
+                {
+                  data_file << S[i];
+                  data_file << "\n";
+                  data_file << "break\n";
+                }
+              else
+                {
+                  data_file << S[i];
+                  data_file << "\n";
+                }
+            }
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
       S[0] = epsilon * B[0] + (1. - epsilon) * J[0];
     }
   data_file.close();
-#else
+#endif
+#ifdef strict_solver
   data_file.open("output_file.txt");
   data_file << epsilon;
   data_file << "\n";
@@ -309,18 +440,21 @@ int main()
 #endif
 
   // Free the memory
+#ifdef vary_eps
+  delete[](eps_grid);
+#endif
   free(lmbda_s);
   free(lmbda_s_S);
   free(J);
   free(S);
   delete[](B);
   delete[](del_tau);
-  delete[](u_m);
-  delete[](p_m);
-  delete[](d_m);
-  delete[](u_p);
-  delete[](p_p);
-  delete[](d_p);
+  delete[](alpha_m);
+  delete[](beta_m);
+  delete[](gamma_m);
+  delete[](alpha_p);
+  delete[](beta_p);
+  delete[](gamma_p);
   delete[](M_a);
   delete[](M_b);
   delete[](M_c);
@@ -331,4 +465,6 @@ int main()
   delete[](z);
 
   printf("done \n");
+
+  return 0;
 }
