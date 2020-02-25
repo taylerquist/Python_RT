@@ -6,7 +6,7 @@
 #include <fstream>
 #include "tau_fn.h"
 #include "quad_int.h"
-//#include "matrix_build.h"
+#include "matrix_build.h"
 #include "matrix_build_vector.h"
 #include "s_interp.h"
 #include "tri_solver.h"

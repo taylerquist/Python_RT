@@ -176,7 +176,11 @@ int main()
       B[i] = 1.;
       alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
       J[i] = 0.5*(I_plus[i]+I_minus[i]);
+#ifdef vary_eps
+      S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
+#else
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+#endif
     }
 #endif
 
