@@ -1,0 +1,36 @@
+import numpy as np
+import h5py
+import matplotlib.pyplot as plt
+
+hf  = h5py.File('los_130.h5','r')
+
+# See what groups are in the file
+#print(hf.keys())
+
+# Choose a group to set the density array
+rho = hf.get('density_x')
+rho = np.array(rho)
+l = float(len(rho))
+#print(len(rho))
+x = np.linspace(0.,l,l)
+
+# (Manually) centered around the largest density jump)
+# Plot it -- this is the section that will be taken for the density profile
+plt.plot(x[1899:1969],rho[1899:1969])
+plt.show()
+
+print(np.amax(rho))
+
+# Trim down to the desired length as shown in the plot above
+rho = rho[1899:1969]
+
+print(np.amax(rho))
+
+# Save rho as a .txt file to read into C++ code
+new_file = open('density_profile.txt','w')
+for i in range(0,len(rho)):
+    string = str(rho[i]) + ' \n'
+    new_file.writelines(string)
+
+# Close the file
+new_file.close()

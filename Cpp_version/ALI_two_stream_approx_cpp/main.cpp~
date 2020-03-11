@@ -36,7 +36,7 @@ using namespace std;
 
 
 // Uncomment this if using ALI with constant epsilon  and B
-//#define ALI
+#define ALI
 
 // Uncomment if epsilon and B are constant and ICs are not getting read in
 //#define reg_IC
@@ -52,7 +52,10 @@ using namespace std;
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
-#define vary_eps
+//#define vary_eps
+
+// Uncomment if reading in density profile
+#define read_density
 
 int main()
 {
@@ -129,9 +132,8 @@ int main()
     }
 #else
   double epsilon; // Photon destruction probability
-  epsilon = 0.1;
+  epsilon = 1.;
 #endif
-
 
   // Initialize the variables
 
@@ -176,7 +178,11 @@ int main()
       B[i] = 1.;
       alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
       J[i] = 0.5*(I_plus[i]+I_minus[i]);
+#ifdef vary_eps
+      S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
+#else
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+#endif
     }
 #endif
 
@@ -225,11 +231,87 @@ int main()
 
   // Set other grids, interpolation coefficients, and matrices
   //----------------------------------------------------------------
+
+  // Setting the optical depth array
+#ifdef read_density
+  // Set a density grid and other necessary values 
+  double *density = new double[n];       // Density profile  
+  double *col_dens = new double[n];      // Column density for H1
+  double sigma_nu = 7.91*pow(10.,-18.);  // Photoionization of H1
+  double pi = 3.14159265358979323846;    // Value of pi
+  double delta_x;                        // Physical size of grid cell at z=3
+  double Delta;                          // Volumetric ratio to scale cell sizes
+  double kpc_cm = 3.086*pow(10.,21.);    // Cm in one kpc
+  double M_sun_g = 1.989*pow(10.,33.);   // Mass of the sun in g
+  double M_H_g = 1.6726*pow(10.,-24.);   // Mass of H1 in grams
+  double redshift = 3.;                  // Redshift of the density profile
+  double h = 0.6766;                     // Scaled Hubble constant
+  double density_conversion;             // Unit conversion constant for the density distribution
+
+  // Read in the density profile .txt file
+  inFile.open("density_profile.txt");
+  // If there is no file with that name raise out of code
+      if (!inFile)
+        {
+	  cerr << "density_profile.txt does not exist!"; // Tell the user what happened
+	  exit(1); // Stop the system
+        }
+
+      index = 0;
+      while (inFile >> s)
+	{
+	  density[index] = s; // Read in density profile element by element
+	  index = index + 1;
+	}
+
+  inFile.close();
+
+  density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
+    (h*h);
+  delta_x = (24.4/h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
+  Delta = (4.*pi)/(delta_x*delta_x*delta_x); // Volume ratio for scaling
+
+  z[0] = 0.;                                 // The grid increases by step size del_z and goes from 0 to 1                                                                                                         
+  B[0] = 0.;                                 // The thermal source function in this example is constant                                                                                                            
+  I_plus[0] = 1.;                            // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta                                                                            
+  I_minus[0] = pow(10.,-22.)/pow(10.,-17);          // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta                                                                               
+  J[0] = 0.5*(I_plus[0]+I_minus[0]);         // The average specific intensity 
+  S[0] = epsilon*B[0] + (1.-epsilon)*J[0];   // The source function Ch.4 section 4.4.4, equation 4.37                                                                                                              
+  density[0] = density[0]*density_conversion
+  col_dens[0] = density[0]*delta_x;
+  del_tau[0] = col_dens[0]*sigma_nu;
+
+  //printf("dens %2.5f\n", density[0]); 
+
+  for (i=1;i<n;i++)
+    {
+      j = (double) (i);
+      z[i] = j*del_z;
+      B[i] = 0.;
+      I_plus[i] = I_plus[0]*(Delta/pow(j,2.));
+      I_minus[i] = I_minus[0];
+      J[i] = 0.5*(I_plus[i]+I_minus[i]);
+      S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+      density[i] = density[i]*density_conversion
+      col_dens[i] = density[i]*delta_x;
+      del_tau[i] = col_dens[i]*sigma_nu;
+      //printf("del_tau %2.5f\n", del_tau[i]);
+    }
+  // Not 100% sure this is the right thing to do about this
+  del_tau[n-1] = del_tau[n-2];
+
+#else
   // Set the array of differences in optical depth for each cell by calling its function
   tau_fn(del_tau,z,del_z,n);
+#endif
 
   // Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
+
+  //for(int k=0;k<n;k++)
+  //{
+  //printf("pp %2.5f\n",p_p[k]);
+  //}
 
 #ifdef vary_eps
   // Open the file to write to and save the left (and right) boundary epsilon value and delta epsilon
@@ -317,6 +399,11 @@ int main()
   // Currently not working because of trouble with defining matrix in main and in function input
   matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
 
+  //for(int k=0;k<n;k++)
+  //{
+  //printf("Mc %2.5f\n",M_c[k]);
+  //}
+
   // Solve for converged S
   // The 1D diffusion equation is a 2nd order PDE where lambda_star*
   // S is the solution
@@ -350,6 +437,8 @@ int main()
           // Ch.4, section 4.4.4, equation 4.48
           y_arr[i] = epsilon*B[i] + (1. - epsilon) * (J[i] - lmbda_s_S[i]);
 
+	  //printf("y %2.5f\n",y_arr[i]);
+
           // Write S to the file for plotting
           // Only write to the file after the first updated iteration
           if (y>0)
@@ -382,7 +471,7 @@ int main()
   data_file.open("output_file.txt");
   data_file << epsilon;
   data_file << "\n";
-  for (t = 0; t < 101; t++) {
+  for (int t = 0; t < 101; t++) {
     for (i = 1; i < n; i++) {
       // First solve the bottom-up interpolated value of S
       Plus = true;
@@ -442,6 +531,10 @@ int main()
   // Free the memory
 #ifdef vary_eps
   delete[](eps_grid);
+#endif
+#ifdef read_density
+  delete[](density);
+  delete[](col_dens);
 #endif
   free(lmbda_s);
   free(lmbda_s_S);
