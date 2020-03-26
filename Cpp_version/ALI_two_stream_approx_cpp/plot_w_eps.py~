@@ -12,7 +12,7 @@ x = []
 y = []
 
 # Set up the double x-axis plot figure
-fig = plt.figure(figsize=[6,6])
+fig = plt.figure(figsize=[7,6])
 #fig.set_size_inches(4.,4.)
 ax1 = fig.add_subplot(1,1,1)
 ax2 = ax1.twiny()
@@ -39,7 +39,7 @@ for i in s:
         x_arr = np.array(x)
         z_arr = x_arr/(len(x_arr)-1.)
         y_arr = np.array(y)
-        ax1.semilogy(z_arr,y_arr,color='k')
+        ax1.semilogy(z_arr,y_arr,color='seagreen')
         # Reset x and y lists
         x = []
         y = []

@@ -39,7 +39,7 @@ for i in s:
         x_arr = np.array(x)
         z_arr = x_arr/(len(x_arr)-1.)
         y_arr = np.array(y)
-        ax1.semilogy(z_arr,y_arr,color='k')
+        ax1.semilogy(z_arr,y_arr,color='seagreen')
         # Reset x and y lists
         x = []
         y = []
@@ -58,7 +58,7 @@ ax2.set_xlabel('epsilon')
 ax1.set_title("S/B vs z, varying epsilon")
 #plt.title("ALI Scheme: S/B vs z, epsilon=%1.3f" %epsilon)
 ax1.set_xlabel("z")
-ax1.set_ylabel("S/B")
+ax1.set_ylabel("log(S/B)")
 ax1.set_xlim(0.0,1.0)
 ax1.set_ylim(0.1,1.1)
 plt.show()

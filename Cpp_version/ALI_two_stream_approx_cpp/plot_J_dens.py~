@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Initialize the arrays
+J = []
+rho = []
+del_tau = []
+# Read the file and strip it of any extra whitespace
+file_J = open('J_output.txt','r').read().strip()
+file_rho = open('rho_output.txt','r').read().strip()
+file_del_tau = open('J_output.txt','r').read().strip()
+# Make one list containing each value from the .txt file
+f_j = file_J.split("\n")
+f_r = file_rho.split("\n")
+f_dt = file_del_tau.split("\n")
+# Create an array of the values from the .txt files
+# As well as re-calculating the z_arr
+n = len(f_j)
+for i in range(0,n):
+    j = float(f_j[i])
+    r =float(f_r[i])
+    dt = float(f_dt[i])
+    J.append(j)
+    rho.append(r)
+    del_tau.append(dt)
+
+# Append the very last element in rho
+rho.append(float(f_r[n]))
+
+# Make these numpy arrays so they can be used more easily
+delta_z = rho[0]
+J = np.array(J)
+rho = np.array(rho[1:])
+z_arr = np.linspace(0,n-1,n)
+z_arr = delta_z*z_arr
+
+#print(len(z_arr))
+
+# Plot it
+#plt.semilogy(z_arr,J,color='teal')
+#plt.plot(z_arr,J,color='teal')
+plt.loglog(z_arr,J,color='teal')
+plt.title("J vs Distance (kpc)")
+plt.xlabel("kpc")
+plt.ylabel("J")
+plt.ylim(10**(-22),10**(-1))
+#plt.xlim(0.,650)
+plt.show()
+
+#plt.plot(z_arr,rho,color='darkorchid')
+#plt.semilogx(z_arr,rho,color='darkorchid')
+plt.semilogy(z_arr,rho,color='darkorchid') 
+plt.title("Density vs Distance (kpc)")
+plt.xlabel("kpc")
+plt.ylabel("Density (cm^-3)")
+#plt.xlim(-.1,650)
+plt.show()
+
+plt.semilogy(z_arr,del_tau,color='navy')
+plt.title("Delta Tau vs Distance (kpc)")
+plt.xlabel("kpc")
+plt.ylabel("Optical Depth")
+plt.show()

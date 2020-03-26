@@ -1,0 +1,7 @@
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <cmath>
+
+// Set the input coefficients for the first order, linear ODE to be solved
