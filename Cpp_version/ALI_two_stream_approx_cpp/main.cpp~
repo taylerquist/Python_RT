@@ -11,6 +11,7 @@
 #include "s_interp.h"
 #include "tri_solver.h"
 #include "mat_mult.h"
+//#include "runge_kutta_solver.h"
 
 using std::ofstream;
 using namespace std;
@@ -57,11 +58,14 @@ using namespace std;
 // Uncomment if reading in density profile
 #define read_density
 
+// Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
+//#define evolve
+
 int main()
 {
   // Allocate the variables
   //--------------------------------
-  int i,y;   // Cell indices and counters
+  int i,y,t; // Cell indices and counters
   int n=70;  // Number of cells
   int index; // To keep track of values while reading in a file
 
@@ -297,7 +301,7 @@ int main()
 	}
       else
 	{
-	  I_plus[i] = I_plus[i-1]*Delta*I_p_init; // Bottom-up specific intensity
+	  I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
 	}
       I_minus[i] = I_m_init;                      // Top-down specific intensity
       J[i] = 0.5*(I_plus[i]+I_minus[i]);          // Mean specific intensity
@@ -318,16 +322,33 @@ int main()
   //printf("pp %2.5f\n",p_p[k]);
   //}
 
-#ifdef vary_eps
-  // Open the file to write to and save the left (and right) boundary epsilon value and delta epsilon
-  // for plotting purposes
+#ifdef evolve
+  ofstream ion_frac_file; // Outfile to save values of QHII
+  double QHII = 1.;       // Ionized fraction of HII
+  //double n_dot_ion;       // Number of ionizing photons 
+  //double n_h_avg;         // Hydrogen number density in each cell 
+  double c_HII = 3.;      // Clumping fraction for the IGM at z=3, T=20,000K
+  double alpha_B;         // Recombination coefficient
+  double Y_p = 0.24;      // Fraction of Helium 
+  double X_p = 1. - Y_p;  // Fraction of Hydrogen 
+  double t_r;             // Recombination time
+  double h=0.1;           // This is the time step by which we evolve the ODE for QHII
+  double eps_ion;         // Ionizing photon production efficiency
+  double QHII_new;        // New value for QHII solved from the ODE
+  double sigma_T = 0.66524587158*pow(10.,-24.) // Thomson cross section
+
+  alpha_B = 2.6*pow(10.,-13.);
+  eps_ion = pow(10.,-28.);
+
+  // Open the file to write the initial value of epsilon
+  // Opened a second file to keep track of the ionized fraction
   data_file.open("output_file.txt");
-  data_file << l_bndry_eps;
+  data_file << epsilon;
   data_file << "\n";
-  data_file << r_bndry_eps;
-  data_file << "\n";
-  data_file << del_eps;
-  data_file << "\n";
+
+  ion_frac_file.open("ion_frac_outfile");
+  ion_frac_file << Q_HII;
+  ion_frac_file << "\n";
 
   // Solve for converged S
   // The 1D diffusion equation is a 2nd order PDE where lambda_star*
@@ -335,7 +356,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (y = 0; y < 102; y++)
+  for (t = 0; t < 102; t++)
     {
       // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
       matrix_build_vector(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,eps_grid,n);
@@ -390,8 +411,14 @@ int main()
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
       S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
+
+      // Solve for the new value of epsilon by solving the ODE for QHII
+      RK4_solver(eps_ion, QHII, trec, h, QHII_new);
+      QHII = QHII_new;
+      epsilon = (sigma_nu*(1. - QHII))/(sigma_nu*(1. - QHII) + (sigma_T*QHII))
     }
   data_file.close();
+  ion_frac_file.close();
 #endif
 
 #ifdef ALI
@@ -404,18 +431,13 @@ int main()
   // Currently not working because of trouble with defining matrix in main and in function input
   matrix_build(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,epsilon,n);
 
-  //for(int k=0;k<n;k++)
-  //{
-  //printf("Mc %2.5f\n",M_c[k]);
-  //}
-
   // Solve for converged S
   // The 1D diffusion equation is a 2nd order PDE where lambda_star*
   // S is the solution
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (y = 0; y < 3; y++)
+  for (y = 0; y < 101; y++)
     {
       // First actually solve the matrix multiplication that will be used later to solve for the y in MX = y
       // It needs to be used in the next loop but it does not need to be re-calculated every time

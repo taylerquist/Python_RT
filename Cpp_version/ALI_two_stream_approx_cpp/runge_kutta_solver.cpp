@@ -4,7 +4,7 @@
 #include <math.h>
 #include <cmath>
 
-void RK4_solver(ph_rate,Q_n,t_rec,h,Q_new)
+void RK4_solver(double ph_rate, double Q_n, double t_rec, double h, double Q_new)
 {
   /* This is a 4th order Runge-Kutta (RK) first order, constant coefficient,
    * linear ODE solver
@@ -16,11 +16,10 @@ void RK4_solver(ph_rate,Q_n,t_rec,h,Q_new)
    * Q_n: This is the current value of the ionized fraction (we are trying to solve Q_n+1
    * t_rec: The IGM recombination time
    * h: The time step
-   * N_step: Number of time steps (T_final/h)
    *
    * Output
    * ------
-   * Q_new = Q_n+1, the new ionized fraction value
+   * Q_new: Q_n+1, the new ionized fraction value
    */
 
   double k1;     // RK k value
@@ -35,5 +34,5 @@ void RK4_solver(ph_rate,Q_n,t_rec,h,Q_new)
   k4 = h*((ph_rate - (Q_n/t_rec)) + h);
 
   // Solve for the new RK value
-  Q_new = Q_n + k1/6. + k2/3. + k3/3. + k4/6.
+  Q_new = Q_n + k1/6. + k2/3. + k3/3. + k4/6.;
 }
