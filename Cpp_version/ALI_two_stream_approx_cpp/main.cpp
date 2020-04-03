@@ -325,20 +325,25 @@ int main()
 #ifdef evolve
   ofstream ion_frac_file; // Outfile to save values of QHII
   double QHII = 1.;       // Ionized fraction of HII
-  //double n_dot_ion;       // Number of ionizing photons 
-  //double n_h_avg;         // Hydrogen number density in each cell 
+  double n_dot_ion;       // Number of ionizing photons 
+  double n_h_avg;         // Hydrogen number density in each cell 
+  double g;               // g = n_dot_ion/n_h_avg
   double c_HII = 3.;      // Clumping fraction for the IGM at z=3, T=20,000K
   double alpha_B;         // Recombination coefficient
   double Y_p = 0.24;      // Fraction of Helium 
   double X_p = 1. - Y_p;  // Fraction of Hydrogen 
-  double t_r;             // Recombination time
+  double t_r_inv;         // Recombination time
   double h=0.1;           // This is the time step by which we evolve the ODE for QHII
   double eps_ion;         // Ionizing photon production efficiency
   double QHII_new;        // New value for QHII solved from the ODE
   double sigma_T = 0.66524587158*pow(10.,-24.) // Thomson cross section
 
   alpha_B = 2.6*pow(10.,-13.);
+  n_dot_ion = 0.5;
+  n_h_avg = 0.5;
+  g = n_dot_ion/n_h_avg;
   eps_ion = pow(10.,-28.);
+  t_r_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg*64.
 
   // Open the file to write the initial value of epsilon
   // Opened a second file to keep track of the ionized fraction
@@ -413,7 +418,7 @@ int main()
       S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
 
       // Solve for the new value of epsilon by solving the ODE for QHII
-      RK4_solver(eps_ion, QHII, trec, h, QHII_new);
+      RK4_solver(g, QHII, t_rec_inv, h, QHII_new);
       QHII = QHII_new;
       epsilon = (sigma_nu*(1. - QHII))/(sigma_nu*(1. - QHII) + (sigma_T*QHII))
     }

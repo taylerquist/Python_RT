@@ -11,7 +11,7 @@
 #include "s_interp.h"
 #include "tri_solver.h"
 #include "mat_mult.h"
-//#include "runge_kutta_solver.h"
+#include "runge_kutta_solver.h"
 
 using std::ofstream;
 using namespace std;
