@@ -2,7 +2,7 @@ EXEC   = main_out
 
 OPTIMIZE =  -O2  
 
-OBJS   = main.o runge_kutta_solver.o
+OBJS   = main.o runge_kutta_solver.o dydx.o
 
 .SUFFIXES : .c .cpp .o
 

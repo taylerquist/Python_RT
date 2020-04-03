@@ -24,34 +24,23 @@ using namespace std;
 int main()
 {
   // Allocate the variables
-  float t;           // Counters
-  double p = 0.25; // Value of p(x)
-  double g = 2.;   // Value of g(x)
-  double y;        // The variable we are evolving
-  double y_new;    // Update the value of y
-  double y_act;    // Analytic solution of y
-  double mu;       // Integration factor that will change with each round
-  double h = 0.1;  // Step size
-
-  ofstream y_file;     // y output file
-  ofstream y_act_file; // Analytic y output file
-  ofstream t_file;     // t output file
+  double x;        // Counters
+  double f_new;    // Update the value of y
+  double f;        // Current value of y
+  double f_act;    // Analytic solution of y
+  double h = 0.001;  // Step size
 
   // Initialize
-  y = 0.;
-  y_act = 0.;
-  y_new = 0.;
-  mu = 0.;
+  f = 0.;
 
-  for (t=0;t<20;t=t+h)
+  for (x=0.1;x<5.1;x=x+h)
     {
-      // Analytic solution
-      mu = exp(t*p);
-      y_act = (8.*exp(t*p))/mu;
-      // Runge-Kutta 4 solution
-      RK4_solver(g, y, p, h, y_new);
-      y = y_new;
-      printf("y %2.5f\n",y);
+      f_act = pow(x,3.)/3. + 0.5*pow(x,2.);
+      f_new = RK4_solver(x, f, h);
+      f = f_new;
+      printf("y_act %2.5f\n",f_act);
+      printf("y %2.5f\n",f_new);
+      printf("------------\n");
     }
 
   return 0;

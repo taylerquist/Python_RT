@@ -1,4 +1,4 @@
 #ifndef RUNGE_KUTTA_SOLVER_H
 #define RUNGE_KUTTA_SOLVER_H
-void RK4_solver(double ph_rate, double Q_n, double t_rec, double h, double Q_new);
+double RK4_solver(double g_x, double y, double p_x, double h);
 #endif //RUNGE_KUTTA_SOLVER_H 

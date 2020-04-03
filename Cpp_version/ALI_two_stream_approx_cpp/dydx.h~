@@ -1,0 +1,4 @@
+#ifndef DYDX_H
+#DEFINE DYDX_H
+double dydx(double x, double f);
+#endif // DYDX_H
