@@ -40,12 +40,15 @@ double RK4_solver(double x_curr, double f_curr, double h)
   // Set the k-values (mentioned in the equaiton in the doc string)
   k1 = dydx(x_curr,f_curr);
   k1 = h*k1;
+
   f_k2 = f_curr + k1/2.;
   k2 = dydx(x_half,f_k2);
   k2 = h*k2;
+
   f_k3 = f_curr + k2/2.;
   k3 = dydx(x_half,f_k3);
   k3 = h*k3;
+
   f_k4 = f_curr + k3;
   k4 = dydx(x_p_h,f_k4);
   k4 = h*k4;

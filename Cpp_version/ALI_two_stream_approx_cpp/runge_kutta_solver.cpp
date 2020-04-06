@@ -55,7 +55,6 @@ double RK4_solver(double x_curr, double f_curr, double h)
 
   // Solve for the new RK value
   f_update = f_curr + k1/6. + k2/3. + k3/3. + k4/6.;
-  //y_update = 1. + y;
-  //printf("y %2.5f\n",y_update);
+
   return f_update;
 }
