@@ -2,7 +2,7 @@ EXEC   = main_out
 
 OPTIMIZE =  -O2  
 
-OBJS   = main.o tau_fn.o quad_int.o matrix_build.o matrix_build_vector.o  s_interp.o tri_solver.o mat_mult.o runge_kutta_solver.o
+OBJS   = main.o tau_fn.o quad_int.o matrix_build.o matrix_build_vector.o  s_interp.o tri_solver.o mat_mult.o runge_kutta_solver.o dydx.o
 
 .SUFFIXES : .c .cpp .o
 

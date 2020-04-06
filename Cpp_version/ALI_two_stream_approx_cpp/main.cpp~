@@ -12,6 +12,7 @@
 #include "tri_solver.h"
 #include "mat_mult.h"
 #include "runge_kutta_solver.h"
+#include "dydx.h"
 
 using std::ofstream;
 using namespace std;
@@ -37,7 +38,7 @@ using namespace std;
 
 
 // Uncomment this if using ALI with constant epsilon  and B
-#define ALI
+//#define ALI
 
 // Uncomment if epsilon and B are constant and ICs are not getting read in
 //#define reg_IC
@@ -53,13 +54,14 @@ using namespace std;
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
-//#define vary_eps
+#define vary_eps
 
 // Uncomment if reading in density profile
 #define read_density
 
 // Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
-//#define evolve
+// Note that read_density and vary_eps must be uncommented with this
+#define evolve
 
 int main()
 {
@@ -252,7 +254,7 @@ int main()
   double M_sun_g = 1.989*pow(10.,33.);   // Mass of the sun in g
   double M_H_g = 1.6726*pow(10.,-24.);   // Mass of H1 in grams
   double redshift = 3.;                  // Redshift of the density profile
-  double h = 0.6766;                     // Scaled Hubble constant
+  double lil_h = 0.6766;                 // Scaled Hubble constant
   double density_conversion;             // Unit conversion constant for the density distribution
   double I_p_init;                       // Initial I+ value
   double I_m_init;                       // Initial I- value
@@ -276,8 +278,8 @@ int main()
   inFile.close();
 
   density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
-    (h*h);
-  delta_x = (24.4/h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
+    (lil_h*lil_h);
+  delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
   //Delta = (4.*pi)/(9.016*9.016*9.016);            // Volume ratio for scaling
 
   I_p_init = 1.*pow(10.,6.);                         // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
@@ -305,7 +307,12 @@ int main()
 	}
       I_minus[i] = I_m_init;                      // Top-down specific intensity
       J[i] = 0.5*(I_plus[i]+I_minus[i]);          // Mean specific intensity
-      S[i] = epsilon*B[i] + (1.-epsilon)*J[i];    // Source function
+      // Source function
+#ifdef vary_eps
+      S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
+#else
+      S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+#endif
       //printf("S %2.5f\n",S[i]);
     }
 
@@ -324,31 +331,21 @@ int main()
 
 #ifdef evolve
   ofstream ion_frac_file; // Outfile to save values of QHII
-  double QHII = 1.;       // Ionized fraction of HII
-  double n_dot_ion;       // Number of ionizing photons 
-  double n_h_avg;         // Hydrogen number density in each cell 
-  double g;               // g = n_dot_ion/n_h_avg
-  double c_HII = 3.;      // Clumping fraction for the IGM at z=3, T=20,000K
-  double alpha_B;         // Recombination coefficient
-  double Y_p = 0.24;      // Fraction of Helium 
-  double X_p = 1. - Y_p;  // Fraction of Hydrogen 
-  double t_r_inv;         // Recombination time
   double h=0.1;           // This is the time step by which we evolve the ODE for QHII
-  double eps_ion;         // Ionizing photon production efficiency
-  double QHII_new;        // New value for QHII solved from the ODE
-  double sigma_T = 0.66524587158*pow(10.,-24.) // Thomson cross section
+  double sigma_T = 0.66524587158*pow(10.,-24.); // Thomson cross section
 
-  alpha_B = 2.6*pow(10.,-13.);
-  n_dot_ion = 0.5;
-  n_h_avg = 0.5;
-  g = n_dot_ion/n_h_avg;
-  eps_ion = pow(10.,-28.);
-  t_r_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg*64.
+  double *QHII = new double[n]; // Ionized fraction of HII
+
+  // Initialize the ionized fraction
+  for (i = 0; i < n; i++)
+    {
+      QHII[i] = 1.;
+    }
 
   // Open the file to write the initial value of epsilon
   // Opened a second file to keep track of the ionized fraction
   data_file.open("output_file.txt");
-  data_file << epsilon;
+  data_file << eps_grid[0];
   data_file << "\n";
 
   ion_frac_file.open("ion_frac_outfile");
@@ -415,12 +412,14 @@ int main()
         }
       // Now use the tri-diagonal solver to actually update S
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
-      S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
 
       // Solve for the new value of epsilon by solving the ODE for QHII
-      QHII_new = RK4_solver(t, QHII, h)
-      QHII = QHII_new;
-      epsilon = (sigma_nu*(1. - QHII))/(sigma_nu*(1. - QHII) + (sigma_T*QHII))
+      RK4_solver(t, QHII, h, density, n, QHII);
+      for (int c = 0; c < n; c++)
+	{
+	  eps_grid[c] = (sigma_nu*(1. - QHII[c]))/(sigma_nu*(1. - QHII[c]) + (sigma_T*QHII[c]));
+	}
+      S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
     }
   data_file.close();
   ion_frac_file.close();

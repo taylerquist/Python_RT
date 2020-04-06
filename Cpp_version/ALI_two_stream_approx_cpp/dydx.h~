@@ -1,4 +1,4 @@
 #ifndef DYDX_H
-#DEFINE DYDX_H
-double dydx(double x, double f);
+#define DYDX_H
+double dydx(double x, double f, double *dens, int n);
 #endif // DYDX_H

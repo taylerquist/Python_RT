@@ -5,7 +5,7 @@
 #include <cmath>
 #include "dydx.h"
 
-double RK4_solver(double x_curr, double f_curr, double h)
+double RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n)
 {
   /* This is a 4th order Runge-Kutta (RK) first order, constant coefficient,
    * linear ODE solver
@@ -15,47 +15,54 @@ double RK4_solver(double x_curr, double f_curr, double h)
    * In the case of constant coefficients g(x), p(x) = g,p
    * Input
    * -----
-   * g_x
-   * y: the current value of y to be updated
-   * p_x
+   * x_curr: Current value of x
+   * f_curr: Current value of the function f(x) across the grid
    * h: The step at which x increases
+   * dens: The array of total gas density for each cell
+   * n: Number of cells in grid
    *
    * Output
    * ------
    * y_update: y_n+1
    */
 
-  double f_update; // Updated integrand value
-  double k1;       // RK k value
-  double k2;       // RK k value 
-  double k3;       // RK k value 
-  double k4;       // RK k value 
+  double *f_update = new double[n]; // Updated integrand value
 
-  double x_half = x_curr + h/2.; // Needed for k calculations
-  double x_p_h = x_curr + h;     // Needed for k calculations
-  double f_k2;
+  double k1; // RK4 adjusting factors
+  double k2;
+  double k3;
+  double k4;
+  double f_k2; // Extra doubles for keeping things clean
   double f_k3;
   double f_k4;
 
-  // Set the k-values (mentioned in the equaiton in the doc string)
-  k1 = dydx(x_curr,f_curr);
-  k1 = h*k1;
+  double x_half = x_curr + h/2.; // Needed for k calculations
+  double x_p_h = x_curr + h;     // Needed for k calculations
 
-  f_k2 = f_curr + k1/2.;
-  k2 = dydx(x_half,f_k2);
-  k2 = h*k2;
+  int i;
 
-  f_k3 = f_curr + k2/2.;
-  k3 = dydx(x_half,f_k3);
-  k3 = h*k3;
+  // Solve for the new values of f
+  for (i=0;i<n;i++)
+    {
+      k1 = dydx(x_curr,f_curr[i],dens[i]);
+      k1 = h*k1;
 
-  f_k4 = f_curr + k3;
-  k4 = dydx(x_p_h,f_k4);
-  k4 = h*k4;
+      f_k2 = f_curr[i] + k1/2.;
+      k2 = dydx(x_half,f_k2,dens[i]);
+      k2 = h*k2;
 
-  // Solve for the new RK value
-  f_update = f_curr + k1/6. + k2/3. + k3/3. + k4/6.;
-  //y_update = 1. + y;
-  //printf("y %2.5f\n",y_update);
+      f_k3 = f_curr[i] + k2/2.;
+      k3 = dydx(x_half,f_k3,dens[i]);
+      k3 = h*k3;
+
+      f_k4 = f_curr[i] + k3;
+      k4 = dydx(x_p_h,f_k4,dens[i]);
+      k4 = h*k4;
+
+      // Solve for the new RK value
+      f_update[i] = f_curr[i] + k1/6. + k2/3. + k3/3. + k4/6.;
+    }
+
+  // Return the array of updated f values
   return f_update;
 }
