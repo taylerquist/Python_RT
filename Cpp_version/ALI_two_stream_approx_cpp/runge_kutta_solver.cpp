@@ -5,7 +5,7 @@
 #include <cmath>
 #include "dydx.h"
 
-void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, double *f_update)
+void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, double *j, double *f_update)
 {
   /* This is a 4th order Runge-Kutta (RK) first order, constant coefficient,
    * linear ODE solver
@@ -19,11 +19,12 @@ void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, do
    * f_curr: Current value of the function f(x) across the grid
    * h: The step at which x increases
    * dens: The array of total gas density for each cell
-   * n: Number of cells in grid
+   * n: Number of cells
+   * j: The average specific intensity
    *
    * Output
    * ------
-   * y_update: y_n+1
+   * f_update: The updated f array
    */
 
   double k1; // RK4 adjusting factors
@@ -42,19 +43,19 @@ void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, do
   // Solve for the new values of f
   for (i=0;i<n;i++)
     {
-      k1 = dydx(x_curr,f_curr[i],dens[i]);
+      k1 = dydx(x_curr,f_curr[i],dens[i],j[i]);
       k1 = h*k1;
 
       f_k2 = f_curr[i] + k1/2.;
-      k2 = dydx(x_half,f_k2,dens[i]);
+      k2 = dydx(x_half,f_k2,dens[i],j[i]);
       k2 = h*k2;
 
       f_k3 = f_curr[i] + k2/2.;
-      k3 = dydx(x_half,f_k3,dens[i]);
+      k3 = dydx(x_half,f_k3,dens[i],j[i]);
       k3 = h*k3;
 
       f_k4 = f_curr[i] + k3;
-      k4 = dydx(x_p_h,f_k4,dens[i]);
+      k4 = dydx(x_p_h,f_k4,dens[i],j[i]);
       k4 = h*k4;
 
       // Solve for the new RK value

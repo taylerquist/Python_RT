@@ -414,7 +414,7 @@ int main()
       tri_solver(M_a,M_b,M_c,y_arr,S,n);
 
       // Solve for the new value of epsilon by solving the ODE for QHII
-      RK4_solver(t, QHII, h, density, n, QHII);
+      RK4_solver(t, QHII, h, density, n, J, QHII);
       for (int c = 0; c < n; c++)
 	{
 	  eps_grid[c] = (sigma_nu*(1. - QHII[c]))/(sigma_nu*(1. - QHII[c]) + (sigma_T*QHII[c]));

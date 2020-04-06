@@ -5,7 +5,7 @@
 #include <cmath>
 #include "dydx.h"
 
-double RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n)
+void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, double *f_update)
 {
   /* This is a 4th order Runge-Kutta (RK) first order, constant coefficient,
    * linear ODE solver
@@ -26,8 +26,6 @@ double RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n)
    * y_update: y_n+1
    */
 
-  double *f_update = new double[n]; // Updated integrand value
-
   double k1; // RK4 adjusting factors
   double k2;
   double k3;
@@ -44,25 +42,24 @@ double RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n)
   // Solve for the new values of f
   for (i=0;i<n;i++)
     {
-      k1 = dydx(x_curr,f_curr[i],dens[i]);
+      k1 = dydx(x_curr,f_curr[i],dens[i],j[i]);
       k1 = h*k1;
 
       f_k2 = f_curr[i] + k1/2.;
-      k2 = dydx(x_half,f_k2,dens[i]);
+      k2 = dydx(x_half,f_k2,dens[i],j[i]);
       k2 = h*k2;
 
       f_k3 = f_curr[i] + k2/2.;
-      k3 = dydx(x_half,f_k3,dens[i]);
+      k3 = dydx(x_half,f_k3,dens[i],j[i]);
       k3 = h*k3;
 
       f_k4 = f_curr[i] + k3;
-      k4 = dydx(x_p_h,f_k4,dens[i]);
+      k4 = dydx(x_p_h,f_k4,dens[i],j[i]);
       k4 = h*k4;
 
       // Solve for the new RK value
       f_update[i] = f_curr[i] + k1/6. + k2/3. + k3/3. + k4/6.;
     }
 
-  // Return the array of updated f values
-  return f_update;
+  // f_update should be filled in
 }

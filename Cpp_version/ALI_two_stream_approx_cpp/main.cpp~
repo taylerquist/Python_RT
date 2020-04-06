@@ -349,7 +349,7 @@ int main()
   data_file << "\n";
 
   ion_frac_file.open("ion_frac_outfile");
-  ion_frac_file << Q_HII;
+  ion_frac_file << QHII[0];
   ion_frac_file << "\n";
 
   // Solve for converged S
