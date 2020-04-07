@@ -38,7 +38,7 @@ using namespace std;
 
 
 // Uncomment this if using ALI with constant epsilon  and B
-//#define ALI
+#define ALI
 
 // Uncomment if epsilon and B are constant and ICs are not getting read in
 //#define reg_IC
@@ -54,14 +54,15 @@ using namespace std;
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
-#define vary_eps
+//#define vary_eps
+//#define vary_eps_reg_IC
 
 // Uncomment if reading in density profile
 #define read_density
 
 // Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
 // Note that read_density and vary_eps must be uncommented with this
-#define evolve
+//#define evolve
 
 int main()
 {
@@ -195,7 +196,7 @@ int main()
     }
 #endif
 
-#ifdef vary_eps
+#ifdef vary_eps_reg_IC 
   for (i=0;i<n;i++)
     {
       j = (double) (i);
@@ -282,7 +283,7 @@ int main()
   delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
   //Delta = (4.*pi)/(9.016*9.016*9.016);            // Volume ratio for scaling
 
-  I_p_init = 1.*pow(10.,6.);                         // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  I_p_init = 1.;                         // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   I_m_init = pow(10.,-22.)/pow(10.,-17); // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_m_init = 0.;
 
