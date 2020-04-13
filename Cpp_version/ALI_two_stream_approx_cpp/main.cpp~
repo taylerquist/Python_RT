@@ -38,7 +38,7 @@ using namespace std;
 
 
 // Uncomment this if using ALI with constant epsilon  and B
-#define ALI
+//#define ALI
 
 // Uncomment if epsilon and B are constant and ICs are not getting read in
 //#define reg_IC
@@ -47,21 +47,22 @@ using namespace std;
 //#define strict_solver
 
 // Uncomment if the ICs are going to be read  in from a file
-//#define read_in_IC
+#define read_in_IC
 
 // Uncomment if the final state of the solver is to be saved (and later set as  ICs)
-#define write_outfile
+//#define write_outfile
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
 //#define vary_eps
+//#define vary_eps_reg_IC
 
 // Uncomment if reading in density profile
 #define read_density
 
 // Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
 // Note that read_density and vary_eps must be uncommented with this
-//#define evolve
+#define evolve
 
 int main()
 {
@@ -195,7 +196,7 @@ int main()
     }
 #endif
 
-#ifdef vary_eps
+#ifdef vary_eps_reg_IC 
   for (i=0;i<n;i++)
     {
       j = (double) (i);
