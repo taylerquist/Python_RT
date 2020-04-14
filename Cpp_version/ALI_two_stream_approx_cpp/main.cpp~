@@ -54,11 +54,12 @@ using namespace std;
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
-//#define vary_eps
+#define vary_eps
 //#define vary_eps_reg_IC
 
 // Uncomment if reading in density profile
 #define read_density
+//#define read_dens_set_IC
 
 // Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
 // Note that read_density and vary_eps must be uncommented with this
@@ -68,7 +69,7 @@ int main()
 {
   // Allocate the variables
   //--------------------------------
-  int i,y,t; // Cell indices and counters
+  int i,y; // Cell indices and counters
   int n=70;  // Number of cells
   int index; // To keep track of values while reading in a file
 
@@ -127,6 +128,10 @@ int main()
   // Below determines if epsilon (photon destruction probability) will be held constant
   // throughout the grid or if it spatially varies
 #ifdef vary_eps
+  double *eps_grid = new double[n]; // Actual grid of epsilon values  
+#endif
+
+#ifdef vary_eps_reg_IC 
 
   double l_bndry_eps = 0.001;       // Left boundary for epsilon grid (epsilon at z=0)
   double r_bndry_eps = 0.1;         // Right boundary for epsilon grid (epsilon at z=1)
@@ -140,7 +145,9 @@ int main()
     {
       eps_grid[i] = l_bndry_eps/(del_eps*float(i));
     }
-#else
+#endif
+
+#ifdef reg_IC
   double epsilon; // Photon destruction probability
   epsilon = 1.;
 #endif
@@ -188,9 +195,10 @@ int main()
       B[i] = 1.;
       alpha[i] = B[i]*pow(10.,(5.-6.*z[i]));
       J[i] = 0.5*(I_plus[i]+I_minus[i]);
-#ifdef vary_eps
+#ifdef vary_eps_reg_IC
       S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
-#else
+#endif
+#ifdef reg_IC
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
 #endif
     }
@@ -298,6 +306,7 @@ int main()
       //del_tau[i] = 0.;
       j = float(i) + 1.;
       Delta = pow(((j-1)/j),2.);
+#ifdef read_dens_set_IC 
       if (i == 0)
 	{
 	  I_plus[i] = I_p_init;                   // Bottom-up specific intensity
@@ -313,6 +322,7 @@ int main()
       S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
 #else
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
+#endif
 #endif
       //printf("S %2.5f\n",S[i]);
     }
@@ -331,27 +341,35 @@ int main()
   //}
 
 #ifdef evolve
-  ofstream ion_frac_file; // Outfile to save values of QHII
+  double t;
   double h=0.1;           // This is the time step by which we evolve the ODE for QHII
   double sigma_T = 0.66524587158*pow(10.,-24.); // Thomson cross section
+  
+  ofstream ion_frac_file; // Going to be used to create an output file for QHII
 
-  double *QHII = new double[n]; // Ionized fraction of HII
+  double *QHII; // Ionized fraction of HII
+  QHII = (double *) std::calloc(n,sizeof(double *));
 
   // Initialize the ionized fraction
   for (i = 0; i < n; i++)
     {
-      QHII[i] = 1.;
+      //printf("Q %2.5f\n",QHII[i]);
+      eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
+      S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
     }
 
-  // Open the file to write the initial value of epsilon
-  // Opened a second file to keep track of the ionized fraction
-  data_file.open("output_file.txt");
-  data_file << eps_grid[0];
-  data_file << "\n";
+  // Open a file to keep track of the ionized fraction
+  // Open a file to keep track of the source function
+  data_file.open("S_outfile.txt");
+  ion_frac_file.open("ion_frac_outfile.txt");
+  for (i = 0; i < n; i++)
+    {
+      data_file << S[i];
+      data_file << "\n";
 
-  ion_frac_file.open("ion_frac_outfile");
-  ion_frac_file << QHII[0];
-  ion_frac_file << "\n";
+      ion_frac_file << QHII[i];
+      ion_frac_file << "\n";
+    }
 
   // Solve for converged S
   // The 1D diffusion equation is a 2nd order PDE where lambda_star*
@@ -359,7 +377,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0; t < 102; t++)
+  for (t = 0.; t < 10.; t=t+h)
     {
       // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
       matrix_build_vector(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,eps_grid,n);
@@ -391,23 +409,30 @@ int main()
 
           // Write S to the file for plotting
           // Only write to the file after the first updated iteration
-          if (y>0)
+          if (t>0)
             {
               if (i==1)
                 {
                   data_file << S[0];
                   data_file << "\n";
+		  ion_frac_file << QHII[0];
+		  ion_frac_file << "\n";
                 }
 	      else if (i==n-1)
                 {
                   data_file << S[i];
                   data_file << "\n";
                   data_file << "break\n";
+		  ion_frac_file << QHII[i];
+		  ion_frac_file << "\n";
+		  ion_frac_file << "break\n";
                 }
               else
                 {
                   data_file << S[i];
                   data_file << "\n";
+		  ion_frac_file << QHII[i];
+		  ion_frac_file << "\n";
                 }
             }
         }
@@ -598,6 +623,9 @@ int main()
 #ifdef read_density
   delete[](density);
   delete[](col_dens);
+#endif
+#ifdef evolve
+  free(QHII);
 #endif
   free(lmbda_s);
   free(lmbda_s_S);
