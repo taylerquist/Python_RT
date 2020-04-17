@@ -19,16 +19,14 @@ index = 0
 count = 0.
 h = 0.1
 
-#z_arr = np.linspace(0.,1.,70)
+z_arr = np.linspace(0.,1.,70)
 
 for i in s_RK:
     if (i == 'break'):
-        #x_arr = np.array(x)
+        x_arr = np.array(x)
         #z_arr = x_arr/(len(x_arr)-1.)
         #z_arr = x_arr/70.
         y_arr_RK = np.array(y_RK)
-        x = len(y_RK)
-        z_arr = np.linspace(0.,1.,x)
         #plt.plot(z_arr,y_arr_act,'-.',color='m')
         #plt.plot(z_arr,y_arr_RK)
         plt.semilogy(z_arr,y_arr_RK)

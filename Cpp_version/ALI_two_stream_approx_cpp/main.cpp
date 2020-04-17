@@ -44,7 +44,7 @@ using namespace std;
 //#define reg_IC
 
 // Uncomment if no lambda acceleration is to be  used
-//#define strict_solver
+#define strict_solver
 
 // Uncomment if the ICs are going to be read  in from a file
 #define read_in_IC
@@ -63,7 +63,9 @@ using namespace std;
 
 // Uncomment if evolving w.r.t. t at z=3 between a galaxy and UV background -- uses ALI automatically
 // Note that read_density and vary_eps must be uncommented with this
-#define evolve
+//#define evolve
+// If the strict solver, or LI scheme is desired instead
+#define evolve_LI
 
 int main()
 {
@@ -342,7 +344,7 @@ int main()
 
 #ifdef evolve
   double t;
-  double h=0.01;           // This is the time step by which we evolve the ODE for QHII
+  double h=0.1;           // This is the time step by which we evolve the ODE for QHII
   double sigma_T = 0.66524587158*pow(10.,-24.); // Thomson cross section
   
   ofstream ion_frac_file; // Going to be used to create an output file for QHII
@@ -386,7 +388,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0.; t < 3.; t=t+h)
+  for (t = 0.; t < 5.; t=t+h)
     {
       // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
       matrix_build_vector(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,eps_grid,n);
@@ -549,10 +551,52 @@ int main()
   data_file.close();
 #endif
 #ifdef strict_solver
+  double t;
+#ifdef evolve_LI
+  double h=0.1;           // This is the time step by which we evolve the ODE for QHII
+  double sigma_T = 0.66524587158*pow(10.,-24.); // Thomson cross section
+  
+  ofstream ion_frac_file; // Going to be used to create an output file for QHII
+  ofstream eps_grid_file; // Saves the evolving values of epsilon across the grid
+
+  double *QHII; // Ionized fraction of HII
+  QHII = (double *) std::calloc(n,sizeof(double *));
+
+  // Initialize the ionized fraction
+  for (i = 0; i < n; i++)
+    {
+      //printf("Q %2.5f\n",QHII[i]);
+      eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
+      S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
+      //printf("S_s %2.5f\n",S[i]);
+    }
+
+  // Open a file to keep track of the ionized fraction
+  // Open a file to keep track of the source function
+  data_file.open("S_outfile.txt");
+  ion_frac_file.open("ion_frac_outfile.txt");
+  eps_grid_file.open("eps_outfile.txt");
+  for (i = 0; i < n; i++)
+    {
+      data_file << S[i];
+      data_file << "\n";
+
+      ion_frac_file << QHII[i];
+      ion_frac_file << "\n";
+
+      eps_grid_file << eps_grid[i];
+      eps_grid_file << "\n";
+    }
+  data_file << "break\n";
+  ion_frac_file << "break\n";
+  eps_grid_file << "break\n";
+#endif
+#ifdef reg_IC
   data_file.open("output_file.txt");
   data_file << epsilon;
   data_file << "\n";
-  for (int t = 0; t < 101; t++) {
+#endif
+  for (t = 0.; t < 10.; t=t+h) {
     for (i = 1; i < n; i++) {
       // First solve the bottom-up interpolated value of S
       Plus = true;
@@ -569,26 +613,58 @@ int main()
       // Update the mean specific intensity from both rays
       // Ch.4, section 4.4.5, equation 4.56
       J[i] = 0.5 * (I_plus[i] + I_minus[i]);
+#ifdef evolve_LI
+      RK4_solver(t, QHII, h, density, n, J, QHII);
+      for (int c = 0; c < n; c++)
+        {
+          eps_grid[c] = (sigma_nu*(1. - QHII[c]))/(sigma_nu*(1. - QHII[c]) + (sigma_T*QHII[c]));
+        }
+      S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
+#else
       S[i] = epsilon * B[i] + (1. - epsilon) * J[i];
-
+#endif
       //Write S to the file for plotting
       if (i==1)
 	{
 	  data_file << S[0];
 	  data_file << "\n";
+#ifdef evolve_LI
+	  ion_frac_file << QHII[0];
+	  ion_frac_file << "\n";
+	  eps_grid_file << eps_grid[0];
+	  eps_grid_file << "\n";
+#endif
 	}
       else if (i==n-1){
 	data_file << S[i];
 	data_file << "\n";
 	data_file << "break\n";
+#ifdef evolve_LI
+	ion_frac_file << QHII[i];
+	ion_frac_file << "\n";
+	ion_frac_file << "break\n";
+	eps_grid_file << eps_grid[i];
+	eps_grid_file << "\n";
+	eps_grid_file << "break\n";
+#endif
       }
       else{
 	data_file << S[i];
 	data_file << "\n";
+#ifdef evolve_LI
+	ion_frac_file << QHII[i];
+	ion_frac_file << "\n";
+	eps_grid_file << eps_grid[i];
+	eps_grid_file << "\n";
+#endif	
       }
     }
   }
   data_file.close();
+#ifdef evolve_LI
+  ion_frac_file.close();
+  eps_grid_file.close();
+#endif
 #endif
   for(int k=0;k<n;k++)
     {
@@ -643,6 +719,9 @@ int main()
   delete[](col_dens);
 #endif
 #ifdef evolve
+  free(QHII);
+#endif
+#ifdef evolve_LI
   free(QHII);
 #endif
   free(lmbda_s);
