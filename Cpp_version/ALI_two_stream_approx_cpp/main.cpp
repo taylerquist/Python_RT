@@ -50,7 +50,7 @@ using namespace std;
 #define read_in_IC
 
 // Uncomment if the final state of the solver is to be saved (and later set as  ICs)
-//#define write_outfile
+#define write_outfile
 
 // Uncomment if epsilon and/or B are varying across the grid or with time
 // Automatically uses the ALI scheme to solve
@@ -342,10 +342,11 @@ int main()
 
 #ifdef evolve
   double t;
-  double h=0.1;           // This is the time step by which we evolve the ODE for QHII
+  double h=0.01;           // This is the time step by which we evolve the ODE for QHII
   double sigma_T = 0.66524587158*pow(10.,-24.); // Thomson cross section
   
   ofstream ion_frac_file; // Going to be used to create an output file for QHII
+  ofstream eps_grid_file; // Saves the evolving values of epsilon across the grid
 
   double *QHII; // Ionized fraction of HII
   QHII = (double *) std::calloc(n,sizeof(double *));
@@ -356,12 +357,14 @@ int main()
       //printf("Q %2.5f\n",QHII[i]);
       eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
       S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
+      //printf("S_s %2.5f\n",S[i]);
     }
 
   // Open a file to keep track of the ionized fraction
   // Open a file to keep track of the source function
   data_file.open("S_outfile.txt");
   ion_frac_file.open("ion_frac_outfile.txt");
+  eps_grid_file.open("eps_outfile.txt");
   for (i = 0; i < n; i++)
     {
       data_file << S[i];
@@ -369,9 +372,13 @@ int main()
 
       ion_frac_file << QHII[i];
       ion_frac_file << "\n";
+
+      eps_grid_file << eps_grid[i];
+      eps_grid_file << "\n";
     }
   data_file << "break\n";
   ion_frac_file << "break\n";
+  eps_grid_file << "break\n";
 
   // Solve for converged S
   // The 1D diffusion equation is a 2nd order PDE where lambda_star*
@@ -379,7 +386,7 @@ int main()
   // The numerical representation used for this PDE is Central Space
   // Forward substitution + backward substitution are used to solve the PDE
   //--------------------------
-  for (t = 0.; t < 10.; t=t+h)
+  for (t = 0.; t < 3.; t=t+h)
     {
       // Set the tri-diagonal arrays of the lambda_star and M_star matrix and the lambda_star full matrix
       matrix_build_vector(lmbda_s,M_a,M_b,M_c,u_p,p_p,d_p,u_m,p_m,d_m,eps_grid,n);
@@ -419,6 +426,8 @@ int main()
                   data_file << "\n";
 		  ion_frac_file << QHII[0];
 		  ion_frac_file << "\n";
+		  eps_grid_file << eps_grid[0];
+		  eps_grid_file << "\n";
                 }
 	      else if (i==n-1)
                 {
@@ -428,6 +437,9 @@ int main()
 		  ion_frac_file << QHII[i];
 		  ion_frac_file << "\n";
 		  ion_frac_file << "break\n";
+		  eps_grid_file << eps_grid[i];
+                  eps_grid_file << "\n";
+		  eps_grid_file << "break\n";
                 }
               else
                 {
@@ -435,6 +447,8 @@ int main()
                   data_file << "\n";
 		  ion_frac_file << QHII[i];
 		  ion_frac_file << "\n";
+		  eps_grid_file << eps_grid[i];
+                  eps_grid_file << "\n";
                 }
             }
         }
@@ -451,6 +465,7 @@ int main()
     }
   data_file.close();
   ion_frac_file.close();
+  eps_grid_file.close();
 #endif
 
 #ifdef ALI
@@ -578,14 +593,15 @@ int main()
   for(int k=0;k<n;k++)
     {
       printf("S %2.5f\n",S[k]);
+      //printf("y %2.5f\n",y_arr[k]);
     }
 
   // Write final values of I+ and I- to different output files to read in later
 #ifdef write_outfile
-  I_p_outfile.open("I_p_output_IC.txt");
-  I_m_outfile.open("I_m_output_IC.txt");
-  J_outfile.open("J_output.txt");
-  del_t_outfile.open("del_t_output.txt");
+  I_p_outfile.open("I_p_output_final.txt");
+  I_m_outfile.open("I_m_output_final.txt");
+  J_outfile.open("J_output_final.txt");
+  del_t_outfile.open("del_t_output_final.txt");
   // If density file is needed uncomment the density-related lines
   rho_outfile.open("rho_output.txt");
   for (i = 0; i < n; i++) {

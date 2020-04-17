@@ -60,6 +60,16 @@ void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, do
 
       // Solve for the new RK value
       f_update[i] = f_curr[i] + k1/6. + k2/3. + k3/3. + k4/6.;
+
+      // Making sure that QHII is bounded between [0,1] since it is a fraction
+      if (f_update[i] > 1.)
+      {
+        f_update[i] = 1.;
+      }
+      //if (f_update[i] < 0.)
+      //{
+      //  f_update[i] = 0.;
+      //}
     }
 
   // f_update should be filled in

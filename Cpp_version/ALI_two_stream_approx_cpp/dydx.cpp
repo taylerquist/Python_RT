@@ -6,6 +6,14 @@
 
 double dydx(double x, double f, double rho, double avg_I)
 {
+
+  /* 
+  * Units of each input/output
+  * f: This is the current value of QHII, dimensionless 
+  * rho: #/cm^3
+  * avg_I: (erg)(cm^-2)(s^-1)(Hz^-1)(rad^-2)
+  */
+
   double c_HII = 3.;      // Clumping fraction for the IGM at z=3, T=20,000K 
   double alpha_B;         // Recombination coefficient 
   double sigma_nu;        // Photoionization cross-section of H ions
@@ -27,5 +35,5 @@ double dydx(double x, double f, double rho, double avg_I)
   t_rec_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg*64.;
 
   // Return the spatially dependent solution
-  return ((n_dot_ion/n_h_avg) - (f*t_rec_inv));
+  return (((n_dot_ion/n_h_avg) - (f*t_rec_inv))*64.);
 }
