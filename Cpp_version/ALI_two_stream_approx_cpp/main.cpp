@@ -270,6 +270,8 @@ int main()
   double I_p_init;                       // Initial I+ value
   double I_m_init;                       // Initial I- value
 
+  double *del_tau_int_init; = new double[n]; // Initial I+ and I- integration values
+
   // Read in the density profile .txt file
   inFile.open("density_profile.txt");
   // If there is no file with that name raise out of code
@@ -303,6 +305,11 @@ int main()
       z[i] = j*del_z;                             // Setting the grid
       B[i] = 0.;                                  // Thermal source function
       density[i] = density[i]*density_conversion; // Scaled density field 
+      //density[i] = 1e-6;
+      if (density[i] > 1.e-4)
+	{
+	  density[i] = 1.e-4;
+	}
       col_dens[i] = density[i]*delta_x;           // Scaled column density
       del_tau[i] = col_dens[i]*sigma_nu;          // Change in optical depth
       //del_tau[i] = 0.;
@@ -321,7 +328,7 @@ int main()
       J[i] = 0.5*(I_plus[i]+I_minus[i]);          // Mean specific intensity
       // Source function
 #ifdef vary_eps
-      S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
+      //S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
 #else
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
 #endif
@@ -627,6 +634,7 @@ int main()
       // Ch.4, section 4.4.5, equation 4.56
       J[i] = 0.5 * (I_plus[i] + I_minus[i]);
 #ifdef evolve_LI
+      // Integrating 
       RK4_solver(t, QHII, h, density, n, J, QHII);
       for (int c = 0; c < n; c++)
         {
@@ -699,7 +707,7 @@ int main()
   for(int k=0;k<n;k++)
     {
       printf("S %2.5f\n",S[k]);
-      //printf("y %2.5f\n",y_arr[k]);
+      //printf("del_tau %2.5f\n",del_tau[k]);
     }
 
   // Write final values of I+ and I- to different output files to read in later
@@ -747,6 +755,7 @@ int main()
 #ifdef read_density
   delete[](density);
   delete[](col_dens);
+  delete[](del_tau_int_init);
 #endif
 #ifdef evolve
   free(QHII);
