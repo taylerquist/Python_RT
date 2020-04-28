@@ -15,7 +15,7 @@ double dydx(double x, double f, double rho, double avg_I)
   */
 
   double c_HII = 3.;      // Clumping fraction for the IGM at z=3, T=20,000K 
-  double alpha_B;         // Recombination coefficient 
+  double alpha_B;         // Recombination coefficient, cm**3/s 
   double sigma_nu;        // Photoionization cross-section of H ions
   double Y_p = 0.24;      // Fraction of Helium 
   double X_p = 1. - Y_p;  // Fraction of Hydrogen   
@@ -32,8 +32,8 @@ double dydx(double x, double f, double rho, double avg_I)
   sigma_nu = 7.91*pow(10.,-18.);
   n_h_avg = rho*X_p;
   n_dot_ion = avg_I*(4*pi)*c_HII*n_h_avg*sigma_nu*eps_ion;
-  t_rec_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg*64.;
+  t_rec_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg;
 
   // Return the spatially dependent solution
-  return (((n_dot_ion/n_h_avg) - (f*t_rec_inv))*64.);
+  return (((n_dot_ion/n_h_avg) - (f*t_rec_inv)));
 }

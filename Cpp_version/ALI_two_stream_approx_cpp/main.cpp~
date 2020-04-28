@@ -56,6 +56,7 @@ using namespace std;
 // Automatically uses the ALI scheme to solve
 #define vary_eps
 //#define vary_eps_reg_IC
+//#define reg_eps
 
 // Uncomment if reading in density profile
 #define read_density
@@ -149,7 +150,7 @@ int main()
     }
 #endif
 
-#ifdef reg_IC
+#ifdef reg_eps
   double epsilon; // Photon destruction probability
   epsilon = 1.;
 #endif
@@ -200,7 +201,7 @@ int main()
 #ifdef vary_eps_reg_IC
       S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
 #endif
-#ifdef reg_IC
+#ifdef reg_eps
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
 #endif
     }
@@ -269,6 +270,12 @@ int main()
   double density_conversion;             // Unit conversion constant for the density distribution
   double I_p_init;                       // Initial I+ value
   double I_m_init;                       // Initial I- value
+  double I_scale;                        // Scaling value of the specific intensity
+
+  double *del_tau_int_init_p = new double[n]; // Initial I+ and I- integration values
+  double *del_tau_int_init_m = new double[n]; // Initial I+ and I- integration values
+  
+  FILE * I_lum;
 
   // Read in the density profile .txt file
   inFile.open("density_profile.txt");
@@ -293,10 +300,13 @@ int main()
   delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
   //Delta = (4.*pi)/(9.016*9.016*9.016);            // Volume ratio for scaling
 
-  I_p_init = 1.;                         // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-  I_m_init = pow(10.,-22.)/pow(10.,-17); // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
+  I_scale = 10.e-17;
+  I_p_init = 10.e-17/I_scale; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  I_m_init = 10.e-22/I_scale; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_m_init = 0.;
 
+  I_lum = fopen("I_luminosity.txt","w");
+  
   for (i=0;i<n;i++)
     {
       j = (double) (i);
@@ -304,36 +314,36 @@ int main()
       B[i] = 0.;                                  // Thermal source function
       density[i] = density[i]*density_conversion; // Scaled density field 
       //density[i] = 1e-6;
-      if (density[i] > 1.e-4)
+      if (density[i] > 1.e-2)
 	{
-	  density[i] = 1.e-4;
+	  density[i] = 1.e-2;
 	}
       col_dens[i] = density[i]*delta_x;           // Scaled column density
       del_tau[i] = col_dens[i]*sigma_nu;          // Change in optical depth
       //del_tau[i] = 0.;
       j = float(i) + 1.;
-      Delta = pow(((j-1)/j),2.);
+      //Delta = pow(((j-1)/j),2.);
 #ifdef read_dens_set_IC 
       if (i == 0)
 	{
 	  I_plus[i] = I_p_init;                   // Bottom-up specific intensity
+	  fprintf(I_lum, "%2.8f\n",I_plus[i]);
 	}
-      else
+      else 
 	{
-	  I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
+	  I_plus[i] = I_plus[0]/pow(j,2.); // Bottom-up specific intensity
+	  fprintf(I_lum, "%2.8f\n",I_plus[i]);
 	}
       I_minus[i] = I_m_init;                      // Top-down specific intensity
       J[i] = 0.5*(I_plus[i]+I_minus[i]);          // Mean specific intensity
       // Source function
-#ifdef vary_eps
-      //S[i] = eps_grid[i]*B[i] + (1.-eps_grid[i])*J[i];
-#else
+#ifdef reg_eps
       S[i] = epsilon*B[i] + (1.-epsilon)*J[i];
 #endif
 #endif
-      //printf("S %2.5f\n",S[i]);
+      //printf("del x %2.5f\n",delta_x);
     }
-
+  fclose(I_lum);
 #else
   // Set the array of differences in optical depth for each cell by calling its function
   tau_fn(del_tau,z,del_z,n);
@@ -573,37 +583,25 @@ int main()
   // Initialize the ionized fraction
   for (i = 0; i < n; i++)
     {
-      //printf("Q %2.5f\n",QHII[i]);
+      printf("Q %2.5f\n",QHII[i]);
       eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
-      S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
-      //printf("S_s %2.5f\n",S[i]);
+      S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i]*I_scale;
+      //printf("eps %2.5f\n",eps_grid[i]);
     }
 
   // Open a file to keep track of the ionized fraction
   // Open a file to keep track of the source function
-  //data_file.open("S_outfile.txt");
-  // ion_frac_file.open("ion_frac_outfile.txt");
-  //eps_grid_file.open("eps_outfile.txt");
   Qfile = fopen("ion_frac_outfile.txt","w");
   eps_file = fopen("eps_outfile.txt","w");
   Sfile = fopen("S_outfile.txt","w");
   for (i = 0; i < n; i++)
     {
-      //data_file << S[i];
-      //data_file << "\n";
       fprintf(Sfile, "%2.5f\n", S[i]);
 
-      //ion_frac_file << QHII[i];
-      //ion_frac_file << "\n";
       fprintf(Qfile, "%2.5f\n",QHII[i]);
 
-      //eps_grid_file << eps_grid[i];
-      //eps_grid_file << "\n";
       fprintf(eps_file, "%2.5f\n",eps_grid[i]);
     }
-  //data_file << "break\n";
-  //ion_frac_file << "break\n";
-  //eps_grid_file << "break\n";
   fprintf(Sfile, "break\n");
   fprintf(Qfile, "break\n");
   fprintf(eps_file, "break\n");
@@ -613,9 +611,19 @@ int main()
   data_file << epsilon;
   data_file << "\n";
 #endif
-  for (t = 0.; t < 10.; t=t+h) {
-    S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
-    for (i = 1; i < n; i++) {
+
+  // Convert I+, I-, and J back into actual units before starting calculations
+  for (i=0;i<n;i++)
+    {
+      I_plus[i] = I_plus[i]*I_scale;
+      I_minus[i] = I_minus[i]*I_scale;
+      J[i] = J[i]*I_scale;
+    }
+
+  for (t = 0.; t < 10.; t=t+h) 
+    {
+      S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
+      for (i = 1; i < n; i++) {
       // First solve the bottom-up interpolated value of S
       Plus = true;
       S_val_plus = S_interp(alpha, S, u_p, p_p, d_p, u_m, p_m, d_m, del_z, i, Plus);
@@ -632,11 +640,21 @@ int main()
       // Ch.4, section 4.4.5, equation 4.56
       J[i] = 0.5 * (I_plus[i] + I_minus[i]);
 #ifdef evolve_LI
+      // Integrating del_tau for the I+ and I- ray respectively
+      //if (t >= 9.9)
+      //{
+      //del_tau_int_init_p[i] = h*(0.5*(del_tau[i+1] + del_tau[i]));
+      //del_tau_int_init_m[i] = h*(0.5*(del_tau[i] + del_tau[i+1]));
+	//printf("del_tau %2.5f\n",del_tau_int_init_m[i]);
+      //}
+      // Solve the ODE to update QHII
       RK4_solver(t, QHII, h, density, n, J, QHII);
+      // Update the eps grid with the new values for QHII
       for (int c = 0; c < n; c++)
         {
           eps_grid[c] = (sigma_nu*(1. - QHII[c]))/(sigma_nu*(1. - QHII[c]) + (sigma_T*QHII[c]));
         }
+      // Update the source function using the new value in the eps_grid
       S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
       //S[0] = eps_grid[0] * B[0] + (1. - eps_grid[0]) * J[0];
 #else
@@ -646,31 +664,16 @@ int main()
       //Write S to the file for plotting
       if (i==1)
 	{
-	  //data_file << S[0];
-	  //data_file << "\n";
 	  fprintf(Sfile, "%2.5f\n", S[0]);
 #ifdef evolve_LI
-	  //ion_frac_file << QHII[0];
-	  //ion_frac_file << "\n";
-	  //eps_grid_file << eps_grid[0];
-	  //eps_grid_file << "\n";
 	  fprintf(Qfile, "%2.5f\n", QHII[0]);
 	  fprintf(eps_file, "%2.5f\n", eps_grid[0]);
 #endif
 	}
       else if (i==n-1){
-	//data_file << S[i];
-	//data_file << "\n";
-	//data_file << "break\n";
 	fprintf(Sfile, "%2.5f\n", S[i]);
 	fprintf(Sfile, "break\n");
 #ifdef evolve_LI
-	//ion_frac_file << QHII[i];
-	//ion_frac_file << "\n";
-	//ion_frac_file << "break\n";
-	//eps_grid_file << eps_grid[i];
-	//eps_grid_file << "\n";
-	//eps_grid_file << "break\n";
 	fprintf(Qfile, "%2.5f\n", QHII[i]);
 	fprintf(Qfile, "break\n");
 	fprintf(eps_file, "%2.5f\n", eps_grid[i]);
@@ -678,25 +681,16 @@ int main()
 #endif
       }
       else{
-	//data_file << S[i];
-	//data_file << "\n";
 	fprintf(Sfile, "%2.5f\n", S[i]);
 #ifdef evolve_LI
-	//ion_frac_file << QHII[i];
-	//ion_frac_file << "\n";
-	//eps_grid_file << eps_grid[i];
-	//eps_grid_file << "\n";
 	fprintf(Qfile, "%2.5f\n", QHII[i]);
 	fprintf(eps_file, "%2.5f\n", eps_grid[i]);
 #endif	
       }
     }
   }
-  //data_file.close();
   fclose(Sfile);
 #ifdef evolve_LI
-  //ion_frac_file.close();
-  //eps_grid_file.close();
   fclose(Qfile);
   fclose(eps_file);
 #endif
@@ -752,6 +746,8 @@ int main()
 #ifdef read_density
   delete[](density);
   delete[](col_dens);
+  delete[](del_tau_int_init_p);
+  delete[](del_tau_int_init_m);
 #endif
 #ifdef evolve
   free(QHII);
