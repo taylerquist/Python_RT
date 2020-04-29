@@ -40,21 +40,28 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
   if (plus==true)
     {
       // Set an upper, positive limit using the extinction coefficient
-      Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
+      //Q_max = 0.5*(alpha_arr[x] + alpha_arr[x-1])*delta_z;
       // Look at the current value of the interpolation
       Q_curr = dp[x]*S_arr[x-1] + pp[x]*S_arr[x] + up[x]*S_arr[x+1]; 
       // Choose a non-negative source funciton value
-      S_int = fmax(fmin(Q_curr,Q_max),0.);
-      return (S_int);
+      //S_int = fmax(fmin(Q_curr,Q_max),0.);
+      //return (S_int);
+      if(isnan(Q_curr))
+        printf("plus i %d dp %e pp %e up %e S[i-1] %e S[i] %e S[i+1] %e\n",x,dp[x],pp[x],up[x],S_arr[x-1],S_arr[x],S_arr[x+1]);
+      return Q_curr;
     }
   else
     {
       // Set an upper, positive limit using the extinction coefficient 
-      Q_max = 0.5*(alpha_arr[x] + alpha_arr[x+1])*delta_z;
+      //Q_max = 0.5*(alpha_arr[x] + alpha_arr[x+1])*delta_z;
       // Look at the current value of the interpolation 
       Q_curr = dm[x]*S_arr[x+1] + pm[x]*S_arr[x] + um[x]*S_arr[x-1]; 
       // Choose a non-negative source funciton value 
-      S_int = fmax(fmin(Q_curr,Q_max),0.);
-      return (S_int);
+      //S_int = fmax(fmin(Q_curr,Q_max),0.);
+      //return (S_int);
+     if(isnan(Q_curr))
+        printf("minus i %d dp %e pp %e up %e S[i-1] %e S[i] %e S[i+1] %e\n",x,dp[x],pp[x],up[x],S_arr[x-1],S_arr[x],S_arr[x+1]);
+  
+      return Q_curr;
     }
 }

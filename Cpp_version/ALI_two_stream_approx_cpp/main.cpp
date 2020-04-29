@@ -13,9 +13,54 @@
 #include "mat_mult.h"
 #include "runge_kutta_solver.h"
 #include "dydx.h"
+#include "subroutines.hpp"
 
 using std::ofstream;
 using namespace std;
+
+
+#define ALT_RT
+#ifdef ALT_RT
+
+int main(int argc, char **argv)
+{
+  int iter;
+  int niter = 10;
+  RT R; //automatically initialized grid
+
+  R.PrintGrid(stdout);
+
+  //iterate
+  for(iter=0;iter<niter;iter++)
+  {
+    //Compute I+, I-, J, and S
+    R.UpdateIntensity();
+
+    //print I+, I-, J, B, and S
+    R.PrintIntensity(stdout);
+
+    //Compute QHII, epsilon, alpha, and del_tau
+    R.UpdateIonization();
+
+    //print QHII, epsilon, alpha, and del_tau
+    R.PrintIonization(stdout);
+  }
+
+  //save the final grid to a file
+  R.PrintGrid(stdout);
+  //R.PrintIonization(stdout);
+
+  FILE *fp;
+  char fname[200];
+  sprintf(fname,"grid.txt");
+  fp = fopen(fname,"w");
+  R.SaveGrid(fp);
+  fclose(fp);
+
+  return 0;
+}
+
+#else  //ALT_RT
 
 // ALI numerical algorithm for the two stream approximation
 /* Notes references
@@ -649,6 +694,7 @@ int main()
       //}
       // Solve the ODE to update QHII
       RK4_solver(t, QHII, h, density, n, J, QHII);
+
       // Update the eps grid with the new values for QHII
       for (int c = 0; c < n; c++)
         {
@@ -780,3 +826,5 @@ int main()
 
   return 0;
 }
+
+#endif //ALT_RT

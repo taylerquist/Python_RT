@@ -26,14 +26,37 @@ double dydx(double x, double f, double rho, double avg_I)
   double pi = 3.14159265358979323846; // Value of pi 
   double c_light = 3.*pow(10.,10.);   // Speed of light in cm/s
   double eps_ion = pow(10.,25.25);    // Ionizing photon production efficiency Hz/erg
+  double lmfp;
+  double answer;
 
   // Set the constants needed for (t_rec)**(-1)
   alpha_B = 2.6*pow(10.,-13.);
-  sigma_nu = 7.91*pow(10.,-18.);
+  alpha_B = 2.6e-13;
+  sigma_nu = 7.91e-18;
+  //sigma_nu = 7.91*pow(10.,-18.);
   n_h_avg = rho*X_p;
-  n_dot_ion = avg_I*(4*pi)*c_HII*n_h_avg*sigma_nu*eps_ion;
+  //  * avg_I: (erg)(cm^-2)(s^-1)(Hz^-1)(rad^-2)
+  //n_dot_ion = avg_I*(4*pi)*c_HII*n_h_avg*sigma_nu*eps_ion;
+  //  * n_dot_ion: (cm^-3)(s^-1)
+  /*if(f<1)
+  {
+    lmfp = 1./(c_HII*(1-f)*n_h_avg*sigma_nu);
+  }else{
+    lmfp = 1.0e24;
+  }*/    
+  lmfp = 1./(c_HII*(1-f)*n_h_avg*sigma_nu);
+  if(lmfp>1.0e24)
+    lmfp = 1.0e24;
+  //lmfp = 
+  lmfp = 2.782235e+22;
+  n_dot_ion = avg_I*(4*pi)*eps_ion/lmfp;
+
   t_rec_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg;
 
+
   // Return the spatially dependent solution
-  return (((n_dot_ion/n_h_avg) - (f*t_rec_inv)));
+  answer =  (((n_dot_ion/n_h_avg) - (f*t_rec_inv)));
+  //printf("t %e avg_I %e n_dot_ion %e lmfp %e n_h_ave %e f %e t_rec_inv %e answer %e\n",x,avg_I,n_dot_ion,lmfp,n_h_avg,f,t_rec_inv,answer);
+
+  return answer;
 }

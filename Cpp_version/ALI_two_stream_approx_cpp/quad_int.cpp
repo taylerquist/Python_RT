@@ -39,27 +39,42 @@ void quad_int(double *up, double *pp, double *dp, double *um, double *pm, double
   // This loop sets the bottom up ray (I+) interpolation coefficients
   for (k=0;k<N-1;k++)
     {
-      e0_p[k] = 1. - exp(-1*delta_tau[k]);
-      e1_p[k] = delta_tau[k] - e0_p[k];
-      e2_p[k] = pow(delta_tau[k],2.) - (2.*e1_p[k]);
+      if((delta_tau[k]>0)&&(delta_tau[k+1]>0))
+      {
+        e0_p[k] = 1. - exp(-1*delta_tau[k]);
+        e1_p[k] = delta_tau[k] - e0_p[k];
+        e2_p[k] = pow(delta_tau[k],2.) - (2.*e1_p[k]);
 
-      dp[k] = e0_p[k] + (e2_p[k] - (2.*delta_tau[k] + delta_tau[k+1])*e1_p[k])/(delta_tau[k]*(delta_tau[k]+
+        dp[k] = e0_p[k] + (e2_p[k] - (2.*delta_tau[k] + delta_tau[k+1])*e1_p[k])/(delta_tau[k]*(delta_tau[k]+
                                                                                               delta_tau[k+1]));
-      pp[k] = (((delta_tau[k]+delta_tau[k+1])*e1_p[k])-e2_p[k])/(delta_tau[k]*delta_tau[k+1]);
-      up[k] = (e2_p[k] - delta_tau[k]*e1_p[k])/(delta_tau[k+1]*(delta_tau[k]+delta_tau[k+1]));
+        pp[k] = (((delta_tau[k]+delta_tau[k+1])*e1_p[k])-e2_p[k])/(delta_tau[k]*delta_tau[k+1]);
+        up[k] = (e2_p[k] - delta_tau[k]*e1_p[k])/(delta_tau[k+1]*(delta_tau[k]+delta_tau[k+1]));
+      }else{
+        dp[k] = 0;
+        pp[k] = 0;
+        up[k] = 0;
+      }
     }
 
   // This loop sets the top down (I-) interpolation coefficients
-  for (k=0;k<N;k++)
+  //for (k=0;k<N;k++) //why?
+  for (k=0;k<N-1;k++)
     {
-      e0_m[k] = 1. - exp(-1*delta_tau[k+1]);
-      e1_m[k] = delta_tau[k+1] - e0_m[k];
-      e2_m[k] = pow(delta_tau[k+1],2.) - (2.*e1_m[k]);
+      if((delta_tau[k]>0)&&(delta_tau[k+1]>0))
+      {
+        e0_m[k] = 1. - exp(-1*delta_tau[k+1]);
+        e1_m[k] = delta_tau[k+1] - e0_m[k];
+        e2_m[k] = pow(delta_tau[k+1],2.) - (2.*e1_m[k]);
 
-      dm[k] = e0_m[k] + (e2_m[k] - (2.*delta_tau[k+1] + delta_tau[k])*e1_m[k])/(delta_tau[k+1]*(delta_tau[k]+
+        dm[k] = e0_m[k] + (e2_m[k] - (2.*delta_tau[k+1] + delta_tau[k])*e1_m[k])/(delta_tau[k+1]*(delta_tau[k]+
 											    delta_tau[k+1]));
-      pm[k] = (((delta_tau[k+1]+delta_tau[k])*e1_m[k])-e2_m[k])/(delta_tau[k+1]*delta_tau[k]);
-      um[k] = (e2_m[k] - delta_tau[k+1]*e1_m[k])/(delta_tau[k]*(delta_tau[k+1]+delta_tau[k]));
+        pm[k] = (((delta_tau[k+1]+delta_tau[k])*e1_m[k])-e2_m[k])/(delta_tau[k+1]*delta_tau[k]);
+        um[k] = (e2_m[k] - delta_tau[k+1]*e1_m[k])/(delta_tau[k]*(delta_tau[k+1]+delta_tau[k]));
+      }else{
+        dm[k] = 0;
+        pm[k] = 0;
+        um[k] = 0;        
+      }
     }
 
   // Free the memory

@@ -47,14 +47,21 @@ void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, do
       k1 = h*k1;
 
       f_k2 = f_curr[i] + k1/2.;
+      if(f_k2>1.0)
+        f_k2 = 1.0;
       k2 = dydx(x_half,f_k2,dens[i],j[i]);
       k2 = h*k2;
 
       f_k3 = f_curr[i] + k2/2.;
+      if(f_k3>1.0)
+        f_k3 = 1.0;
       k3 = dydx(x_half,f_k3,dens[i],j[i]);
       k3 = h*k3;
 
+
       f_k4 = f_curr[i] + k3;
+      if(f_k4>1.0)
+        f_k4 = 1.0;
       k4 = dydx(x_p_h,f_k4,dens[i],j[i]);
       k4 = h*k4;
 
