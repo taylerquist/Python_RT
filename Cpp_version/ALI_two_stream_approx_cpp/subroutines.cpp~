@@ -268,8 +268,8 @@ void RT::UpdateIonization(void)
     //compute the change in optical depth
     del_tau[i] = alpha[i]*delta_x;
 
-    //compute the epsilon
-    eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
+    //compute the photon destruction probability
+    eps_grid[i] = 
 
   }
   //Set the array of third order quadratic interpolation coefficients
