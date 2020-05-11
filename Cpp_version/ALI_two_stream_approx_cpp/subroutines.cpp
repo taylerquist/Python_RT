@@ -62,9 +62,9 @@ void RT::SetConstants(void)
 
   I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-  I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
+  //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_p_init = 1.0e-17;
-  //I_m_init = 0;
+  I_m_init = 0;
 
 }
 
@@ -134,13 +134,13 @@ void RT::InitializeGrid(void)
     z[i] = j*del_z;                             // Setting the grid
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
-    density[i] = density[i]*density_conversion; // Scaled density field 
-    //density[i] = 5.0e-5;
+    //density[i] = density[i]*density_conversion; // Scaled density field 
+    density[i] = 1.0e-8;
 
     //density[i] = 1.0e-4;
 
-    if(density[i]>density_limit)
-      density[i] = density_limit;
+    //if(density[i]>density_limit)
+    //density[i] = density_limit;
 
     col_dens[i] = density[i]*delta_x;           // Scaled column density
     del_tau[i] = col_dens[i]*sigma_nu;          // Change in optical depth
