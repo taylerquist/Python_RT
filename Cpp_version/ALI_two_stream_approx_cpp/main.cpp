@@ -26,9 +26,14 @@ int main(int argc, char **argv)
 {
   int iter;
   int niter = 10;
+  int grid_size = 1000; // For saving variable outputs
   RT R; //automatically initialized grid
 
+  //FILE * QHII_out;
+
   R.PrintGrid(stdout);
+
+  //QHII_out = fopen("ion_frac_outfile.txt","w");
 
   //iterate
   for(iter=0;iter<niter;iter++)
@@ -44,6 +49,13 @@ int main(int argc, char **argv)
 
     //print QHII, epsilon, alpha, and del_tau
     R.PrintIonization(stdout);
+
+    // Save QHII to a file
+    //for(int k=0;k<grid_size;k++)
+    //{
+    //fprintf(QHII_out, "%2.8f\n",QHII[k]);
+    //}
+
   }
 
   //save the final grid to a file

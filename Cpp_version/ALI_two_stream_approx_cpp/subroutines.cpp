@@ -38,7 +38,7 @@ void RT::PrintIonization(FILE *fp)
 }
 void RT::SetConstants(void)
 {
-  n = 70; //number of grid cells
+  n = 1000; //number of grid cells
   sigma_nu = 7.91e-18;  // Photoionization of H1
   pi = 3.14159265358979323846;    // Value of pi
   //delta_x;                        // Physical size of grid cell at z=3
@@ -51,7 +51,8 @@ void RT::SetConstants(void)
   // Unit conversion constant for the density distribution
   density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
     (lil_h*lil_h);
-  delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm
+  //delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm for 70 grid points
+  delta_x = 622.08123/(n-1);
   //printf("delta_x = %e\n",delta_x);
   del_z = 1./float(n); // Grid step size
 
@@ -134,8 +135,8 @@ void RT::InitializeGrid(void)
     z[i] = j*del_z;                             // Setting the grid
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
-    //density[i] = density[i]*density_conversion; // Scaled density field 
-    density[i] = 1.0e-8;
+    density[i] = density[i]*density_conversion; // Scaled density field 
+    //density[i] = 1.0e-8;
 
     //density[i] = 1.0e-4;
 
