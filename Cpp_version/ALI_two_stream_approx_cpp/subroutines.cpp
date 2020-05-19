@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <fstream>
 #include "subroutines.hpp"
 #include "quad_int.h"
 #include "s_interp.h"
@@ -63,9 +64,9 @@ void RT::SetConstants(void)
 
   I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-  //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
+  I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_p_init = 1.0e-17;
-  I_m_init = 0;
+  //I_m_init = 0;
 
 }
 
@@ -129,6 +130,14 @@ void RT::InitializeGrid(void)
 
   double j;
 
+  //Create initial QHII, eps_grid, and source fn output file
+  std::ofstream QHII_outfile;
+  std::ofstream eps_outfile;
+  std::ofstream source_outfile;
+  QHII_outfile.open("QHII_out.txt"); // append instead of overwrite
+  eps_outfile.open("eps_out.txt"); // append instead of overwrite 
+  source_outfile.open("S_out.txt"); // append instead of overwrite 
+
   for(int i=0;i<n;i++)
   {
     j = (double) (i);
@@ -179,13 +188,27 @@ void RT::InitializeGrid(void)
     // Source function
     S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
 
+    //Save the value 
+    QHII_outfile << QHII[i];
+    QHII_outfile << '\n';
+    eps_outfile << eps_grid[i];
+    eps_outfile << '\n';
+    source_outfile << S[i];
+    source_outfile << '\n';
+
   }
+
+  QHII_outfile.close();
+  eps_outfile.close();
+  source_outfile.close();
 
   //Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 }
 void RT::UpdateIntensity(void)
 {
+  std::ofstream source_outfile;
+
   int i;
   double j;
   double Delta;
@@ -225,6 +248,9 @@ void RT::UpdateIntensity(void)
     I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
   }
 
+  //Open file to append
+  source_outfile.open("S_out.txt", std::ios_base::app); // append instead of overwrite 
+
   //compute J and update S
   for(i=0;i<n;i++)
   {
@@ -234,12 +260,21 @@ void RT::UpdateIntensity(void)
 
     // Source function, B[i] constant, eps_grid computed in ionization routine
     S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
+
+    //Append
+    source_outfile << S[i];
+    source_outfile << '\n';
   }
+
+  source_outfile.close();
 
 }
 
 void RT::UpdateIonization(void)
 {
+  std::ofstream QHII_outfile;
+  std::ofstream eps_outfile;
+
   int i;
 
   int iq, nq;
@@ -261,6 +296,11 @@ void RT::UpdateIonization(void)
   }
 
   //update alpha and del_tau
+  //And save values of QHII ti an outfile
+
+  QHII_outfile.open("QHII_out.txt", std::ios_base::app); // append instead of overwrite 
+  eps_outfile.open("eps_out.txt", std::ios_base::app); // append instead of overwrite 
+
   for(i=0;i<n;i++)
   {
     //compute the extinction coefficient
@@ -272,7 +312,18 @@ void RT::UpdateIonization(void)
     //compute the epsilon
     eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
 
+    //Append
+    QHII_outfile << QHII[i];
+    QHII_outfile << '\n';
+    eps_outfile << eps_grid[i];
+    eps_outfile << '\n';
+
   }
+
+  //Close the file
+  QHII_outfile.close();
+  eps_outfile.close();
+
   //Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 }

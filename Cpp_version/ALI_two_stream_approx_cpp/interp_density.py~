@@ -28,7 +28,7 @@ rho = rho[1899:1969]
 
 # Interpolate to desired grid density
 interp = True
-n = 200
+n = 500
 x_interp = np.linspace(0,len(rho)-1,n)
 x_norm = np.linspace(0,len(rho)-1,70)
 rho_interp = np.interp(x_interp,x_norm,rho)
@@ -45,7 +45,7 @@ x_norm = x_norm*reg_con
 
 plt.semilogy(x_interp,rho_interp, color='c',label='Interp')
 plt.semilogy(x_norm,rho, color='b', linestyle='--',label='Non-interp')
-plt.title('Interpolated density: grid size 500')
+plt.title('Interpolated density: grid size 200')
 plt.xlabel(r'Radius [$\mathrm{kpc}$]')
 plt.ylabel(r'Density [$\mathrm{h^{2} M_{sun} kpc^{3}}$]')
 plt.legend()
@@ -67,21 +67,32 @@ else:
 new_file.close()
 
 # Plot converted interpolation
-kpc_cm = 3.086e21
-M_sun_g = 1.989e3
-M_H_g = 1.6726e-24
-redshift = 3.
-lil_h = 0.6766
+#kpc_cm = 3.086e21
+#M_sun_g = 1.989e3
+#M_H_g = 1.6726e-24
+#redshift = 3.
+#lil_h = 0.6766
 
-density_conversion = (M_sun_g/(kpc_cm)**3.)*(1./M_H_g)*((redshift+1.)**3.)*(lil_h**2.)
+#density_conversion = (M_sun_g/(kpc_cm)**3.)*(1./M_H_g)*((redshift+1.)**3.)*(lil_h**2.)
 #delta_x = 622.08123/(n-1);
 
-rho_interp = rho_interp*density_conversion
-rho = rho*density_conversion
-plt.semilogy(x_interp,rho_interp, color='violet',label='Interp')
-plt.semilogy(x_norm,rho, color='indigo', linestyle='--',label='Non-interp')
-plt.title('Interpolated density: grid size 1000')
-plt.xlabel(r'Radius [$\mathrm{kpc}$]')
-plt.ylabel(r'Density [$\mathrm{cm^{-3}}$]')
-plt.legend()
-#plt.show()
+x_interp2 = np.linspace(0,len(rho)-1,n)
+x_norm = np.linspace(0,len(rho)-1,70)
+rho_interp2 = np.interp(x_interp2,x_norm,rho)
+
+x_interp = x_interp*reg_con
+x_norm = x_norm*reg_con
+
+fig,(ax1,ax2) = plt.subplots(1,2, sharey=True)
+fig.suptitle('Density Field Interpolation')
+ax1.semilogy(x_interp,rho_interp, color='tomato',label='Interp 500')
+ax1.semilogy(x_norm,rho, color='maroon', linestyle='--',label='Non-interp')
+ax2.semilogy(x_interp2,rho_interp2, color='orange',label='Interp 1000')
+ax2.semilogy(x_norm,rho, color='saddlebrown', linestyle='--',label='Non-interp')
+ax1.set_ylabel(r'Density [$\mathrm{h^{2} M_{sun} kpc^{3}}$]')
+fig.text(0.5, 0.01, r'$x$ [$\mathrm{kpc}$]', ha='center', rotation='horizontal')
+fig.set_figheight(8)
+fig.set_figwidth(16)
+ax1.legend()
+ax2.legend()
+plt.show()

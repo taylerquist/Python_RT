@@ -45,7 +45,7 @@ a_cut.append(analytic[-1])
 comp1 = comp1[2:-1]
 comp2 = comp2[1:-1]
 comp3 = comp3[:-1]
-comp3 = comp4[:-1]
+comp4 = comp4[:-1]
 
 # Create the density range
 rho = [1.,1.e-1,1.e-2,1.e-3,1.e-4,1.e-5,1.e-6,1.e-7,1.e-8]
