@@ -73,10 +73,10 @@ void RK4_solver(double x_curr, double *f_curr, double h, double *dens, int n, do
       {
         f_update[i] = 1.;
       }
-      //if (f_update[i] < 0.)
-      //{
-      //  f_update[i] = 0.;
-      //}
+      if (f_update[i] < 0.)
+      {
+	f_update[i] = 0.;
+      }
     }
 
   // f_update should be filled in
