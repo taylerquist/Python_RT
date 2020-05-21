@@ -19,6 +19,7 @@ void RT::PrintGrid(FILE *fp)
   printf("i,x,I+,I-,S,QHII,Dtau\n");
   for(int i=0;i<n;i++)
     fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
+
 }
 void RT::SaveGrid(FILE *fp)
 {
@@ -27,15 +28,44 @@ void RT::SaveGrid(FILE *fp)
 }
 void RT::PrintIntensity(FILE *fp)
 {
-  printf("Intensity (i,x,I+,I-,J,B,S\n");
-  for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,I_plus[i],I_minus[i],J[i],B[i],S[i]);
+  printf("Intensity (i,x,I+,I-,J,B,S\n)");
+  //for(int i=0;i<n;i++)
+  //fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,I_plus[i],I_minus[i],J[i],B[i],S[i]);
 }
 void RT::PrintIonization(FILE *fp)
 {
-  printf("Ionization (i,x,QHII,epsilon,alpha,del_tau\n");
-  for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,QHII[i],eps_grid[i],alpha[i],del_tau[i]);
+  std::ofstream QHII_outfile;
+  std::ofstream eps_outfile;
+  std::ofstream dtau_outfile;
+
+  //printf("Ionization (i,x,QHII,epsilon,alpha,del_tau\n)");
+  printf("Ionization (i,x,del_tau\n)");
+
+  // Open the files in a special way
+  QHII_outfile.open("QHII_out.txt", std::ios_base::app); // append instead of overwrite                                                                                                                               
+  eps_outfile.open("eps_out.txt", std::ios_base::app); 
+  dtau_outfile.open("del_tau_out.txt", std::ios_base::app); 
+
+  for(int i=0;i<n;i++){
+    //fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,QHII[i],eps_grid[i],alpha[i],del_tau[i]);
+    fprintf(fp,"%d\t%e\t%e\n",i,xg[i]/kpc_cm,del_tau[i]); 
+    QHII_outfile << QHII[i];
+    QHII_outfile << '\n';
+    eps_outfile << eps_grid[i];
+    eps_outfile << '\n';
+    dtau_outfile << del_tau[i];
+    dtau_outfile << '\n';
+  }
+
+  // Helps organize the txt file when reading and plotting the data                                                                                                                                                   
+  QHII_outfile << "break\n";
+  eps_outfile << "break\n";
+  dtau_outfile << "break\n";
+
+  // Close the files
+  QHII_outfile.close();
+  eps_outfile.close();
+  dtau_outfile.close();
 }
 void RT::SetConstants(void)
 {
@@ -65,8 +95,8 @@ void RT::SetConstants(void)
   I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  I_p_init = 1.0e-17;
-  //I_m_init = 0;
+  //I_p_init = 1.0e-17;
+  I_m_init = 0;
 
 }
 
@@ -130,13 +160,15 @@ void RT::InitializeGrid(void)
 
   double j;
 
-  //Create initial QHII, eps_grid, and source fn output file
+  //Create initial output files and open them
   std::ofstream QHII_outfile;
   std::ofstream eps_outfile;
-  std::ofstream source_outfile;
-  QHII_outfile.open("QHII_out.txt"); // append instead of overwrite
-  eps_outfile.open("eps_out.txt"); // append instead of overwrite 
-  source_outfile.open("S_out.txt"); // append instead of overwrite 
+  std::ofstream J_outfile;
+  std::ofstream dtau_outfile;
+  QHII_outfile.open("QHII_out.txt");
+  eps_outfile.open("eps_out.txt"); 
+  J_outfile.open("J_out.txt");
+  dtau_outfile.open("del_tau_out.txt");
 
   for(int i=0;i<n;i++)
   {
@@ -144,10 +176,8 @@ void RT::InitializeGrid(void)
     z[i] = j*del_z;                             // Setting the grid
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
-    density[i] = density[i]*density_conversion; // Scaled density field 
-    //density[i] = 1.0e-8;
-
-    //density[i] = 1.0e-4;
+    //density[i] = density[i]*density_conversion; // Scaled density field 
+    density[i] = 1.0e-3;
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;
@@ -169,7 +199,7 @@ void RT::InitializeGrid(void)
     }
 
     if(i==n-1)
-      I_minus[i] = I_m_init;                      // Top-down specific intensity
+      I_minus[i] = I_m_init;
 
     //printf("i%d I_plus %e I_minus %e\n",i,I_plus[i],I_minus[i]);
 
@@ -188,26 +218,35 @@ void RT::InitializeGrid(void)
     // Source function
     S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
 
-    //Save the value 
+    //Append the value to its corresponding file
     QHII_outfile << QHII[i];
     QHII_outfile << '\n';
     eps_outfile << eps_grid[i];
     eps_outfile << '\n';
-    source_outfile << S[i];
-    source_outfile << '\n';
-
+    J_outfile << J[i];
+    J_outfile << '\n';
+    dtau_outfile << del_tau[i];
+    dtau_outfile << '\n';
   }
 
+  // This helps for reading and plotting the data later
+  QHII_outfile << "break\n";
+  eps_outfile << "break\n";
+  J_outfile << "break\n";
+  dtau_outfile << "break\n";
+
+  // Close the files
   QHII_outfile.close();
   eps_outfile.close();
-  source_outfile.close();
+  J_outfile.close();
+  dtau_outfile.close();
 
   //Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 }
 void RT::UpdateIntensity(void)
 {
-  std::ofstream source_outfile;
+  std::ofstream J_outfile;
 
   int i;
   double j;
@@ -249,7 +288,7 @@ void RT::UpdateIntensity(void)
   }
 
   //Open file to append
-  source_outfile.open("S_out.txt", std::ios_base::app); // append instead of overwrite 
+  J_outfile.open("J_out.txt", std::ios_base::app); // append instead of overwrite 
 
   //compute J and update S
   for(i=0;i<n;i++)
@@ -262,19 +301,17 @@ void RT::UpdateIntensity(void)
     S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
 
     //Append
-    source_outfile << S[i];
-    source_outfile << '\n';
+    J_outfile << J[i];
+    J_outfile << '\n';
   }
 
-  source_outfile.close();
+  J_outfile << "break\n";
+  J_outfile.close();
 
 }
 
 void RT::UpdateIonization(void)
 {
-  std::ofstream QHII_outfile;
-  std::ofstream eps_outfile;
-
   int i;
 
   int iq, nq;
@@ -296,11 +333,6 @@ void RT::UpdateIonization(void)
   }
 
   //update alpha and del_tau
-  //And save values of QHII ti an outfile
-
-  QHII_outfile.open("QHII_out.txt", std::ios_base::app); // append instead of overwrite 
-  eps_outfile.open("eps_out.txt", std::ios_base::app); // append instead of overwrite 
-
   for(i=0;i<n;i++)
   {
     //compute the extinction coefficient
@@ -312,17 +344,7 @@ void RT::UpdateIonization(void)
     //compute the epsilon
     eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
 
-    //Append
-    QHII_outfile << QHII[i];
-    QHII_outfile << '\n';
-    eps_outfile << eps_grid[i];
-    eps_outfile << '\n';
-
   }
-
-  //Close the file
-  QHII_outfile.close();
-  eps_outfile.close();
 
   //Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);

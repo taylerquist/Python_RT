@@ -10,7 +10,7 @@ hf  = h5py.File('los_130.h5','r')
 # Choose a group to set the density array
 rho = hf.get('density_x')
 rho = np.array(rho)
-l = float(len(rho))
+l = len(rho)
 #print(len(rho))
 x = np.linspace(0.,l,l)
 

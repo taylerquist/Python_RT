@@ -50,12 +50,6 @@ int main(int argc, char **argv)
     //print QHII, epsilon, alpha, and del_tau
     R.PrintIonization(stdout);
 
-    // Save QHII to a file
-    //for(int k=0;k<grid_size;k++)
-    //{
-    //fprintf(QHII_out, "%2.8f\n",QHII[k]);
-    //}
-
   }
 
   //save the final grid to a file
