@@ -18,13 +18,13 @@ void RT::PrintGrid(FILE *fp)
 {
   printf("i,x,I+,I-,S,QHII,Dtau\n");
   for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i],density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
+    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 
 }
 void RT::SaveGrid(FILE *fp)
 {
   for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i],density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
+    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 }
 void RT::PrintIntensity(FILE *fp)
 {
@@ -83,8 +83,8 @@ void RT::SetConstants(void)
   density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
     (lil_h*lil_h);
   //delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm for 70 grid points
-  delta_x = 622.08123/(n-1);
-  //printf("delta_x = %e\n",delta_x);
+  delta_x = 622.08123*kpc_cm/((double) (n-1));
+  printf("delta_x = %e\n",delta_x);
   del_z = 1./float(n); // Grid step size
 
   //density_limit = 1.0e-2;
@@ -92,7 +92,13 @@ void RT::SetConstants(void)
 
   sigma_T = 0.66524587158e-24; // Thomson cross section
 
-  I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+	//I_p_init = 2.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+	//I_p_init = 3.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+	//I_p_init = 5.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+	//I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+	I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+
   //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_p_init = 1.0e-17;
@@ -291,7 +297,7 @@ void RT::UpdateIntensity(void)
     fac = fmin(fmax(0,1.0-n_H/n_ion),1);
 
     //fac = 1.0;
-    printf("i %d I_plus[i-1] %e Sval %e Delta %e n_ion %e n_H %e density %e fac %e\n",i,I_plus[i-1],S_val_plus,Delta,n_ion,n_H,density[i],fac);
+    printf("i %d I_plus[i-1] %e Sval %e Delta %e dtau %e n_ion %e n_H %e density %e QHII %e fac %e\n",i,I_plus[i-1],S_val_plus,Delta,del_tau[i-1],n_ion,n_H,density[i],QHII[i],fac);
 
     I_plus[i] = exp(-del_tau[i-1]) * Delta * I_plus[i-1] * fac + S_val_plus;
     //if(I_plus[i]<0)
