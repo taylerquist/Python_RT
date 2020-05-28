@@ -18,19 +18,19 @@ void RT::PrintGrid(FILE *fp)
 {
   printf("i,x,I+,I-,S,QHII,Dtau\n");
   for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
+    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i],density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 
 }
 void RT::SaveGrid(FILE *fp)
 {
   for(int i=0;i<n;i++)
-    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
+    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i],density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 }
 void RT::PrintIntensity(FILE *fp)
 {
   printf("Intensity (i,x,I+,I-,J,B,S\n)");
-  //for(int i=0;i<n;i++)
-  //fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,I_plus[i],I_minus[i],J[i],B[i],S[i]);
+  for(int i=0;i<n;i++)
+    fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,I_plus[i],I_minus[i],J[i],B[i],S[i]);
 }
 void RT::PrintIonization(FILE *fp)
 {
@@ -178,6 +178,11 @@ void RT::InitializeGrid(void)
     B[i] = 0.;                                  // Thermal source function
     //density[i] = density[i]*density_conversion; // Scaled density field 
     density[i] = 1.0e-3;
+    //density[i] = 1.0e-4;
+    //density[i] = 1.0e-5;
+//>>> 21.17/(100**0.3333)
+//4.561638422430451
+
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;
@@ -255,6 +260,12 @@ void RT::UpdateIntensity(void)
 
   double S_val_plus, S_val_minus;
   //loop over the grid and update the intensity
+  double n_ion;
+  double n_H;
+  double c = 3.0e10; //cm/s
+  double eps_ion = pow(10.,25.25);    // Ionizing photon production efficiency Hz/erg
+  double pi = 3.14159265358979323846; // Value of pi 
+  double fac;
 
   //first, compute I+
   I_plus[0] = I_p_init;
@@ -272,11 +283,24 @@ void RT::UpdateIntensity(void)
     S_val_plus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,delta_x,i,Plus);
     
     //compute I+, with extra 1/r^2 attenuation
-    I_plus[i] = exp(-del_tau[i-1]) * Delta * I_plus[i-1] + S_val_plus;
+    //need to subtract off recombinations
+
+    //number density of ionizing photons
+    n_ion = exp(-del_tau[i-1]) * Delta * I_plus[i-1]*(4*pi/c)*eps_ion;
+    n_H = QHII[i]*density[i];
+    fac = fmin(fmax(0,1.0-n_H/n_ion),1);
+
+    //fac = 1.0;
+    printf("i %d I_plus[i-1] %e Sval %e Delta %e n_ion %e n_H %e density %e fac %e\n",i,I_plus[i-1],S_val_plus,Delta,n_ion,n_H,density[i],fac);
+
+    I_plus[i] = exp(-del_tau[i-1]) * Delta * I_plus[i-1] * fac + S_val_plus;
+    //if(I_plus[i]<0)
+    //  I_plus[i] = 0;
   }
 
   //second, compute I-
   I_minus[n-1] = I_m_init;
+
   for(i=n-2;i>=0;i--)
   {
     // First solve the top-down interpolated value of S
@@ -285,6 +309,7 @@ void RT::UpdateIntensity(void)
 
     //compute I-
     I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
+
   }
 
   //Open file to append

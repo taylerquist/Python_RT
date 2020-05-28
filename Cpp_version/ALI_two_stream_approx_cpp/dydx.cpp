@@ -51,6 +51,9 @@ double dydx(double x, double f, double rho, double avg_I)
   lmfp = 2.782235e+22;
   n_dot_ion = avg_I*(4*pi)*eps_ion/lmfp;
 
+
+  //n_dot_ion  = (4*pi/c)*avg_I*eps_ion; //# density of ionizing photons
+
   t_rec_inv = c_HII*alpha_B*(1. + (Y_p/(4.*X_p)))*n_h_avg;
 
 

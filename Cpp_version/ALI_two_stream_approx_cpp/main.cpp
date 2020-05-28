@@ -25,7 +25,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int iter;
-  int niter = 10;
+  int niter = 100;
   int grid_size = 1000; // For saving variable outputs
   RT R; //automatically initialized grid
 
@@ -354,7 +354,7 @@ int main()
   I_scale = 10.e-17;
   I_p_init = 10.e-17/I_scale; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   I_m_init = 10.e-22/I_scale; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  //I_m_init = 0.;
+  I_m_init = 0.;
 
   I_lum = fopen("I_luminosity.txt","w");
   

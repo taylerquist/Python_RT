@@ -48,7 +48,7 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
       //return (S_int);
       if(isnan(Q_curr))
         printf("plus i %d dp %e pp %e up %e S[i-1] %e S[i] %e S[i+1] %e\n",x,dp[x],pp[x],up[x],S_arr[x-1],S_arr[x],S_arr[x+1]);
-      return Q_curr;
+      return fmax(Q_curr,0);
     }
   else
     {
@@ -62,6 +62,6 @@ double S_interp(double *alpha_arr, double *S_arr, double *up, double *pp, double
      if(isnan(Q_curr))
         printf("minus i %d dp %e pp %e up %e S[i-1] %e S[i] %e S[i+1] %e\n",x,dp[x],pp[x],up[x],S_arr[x-1],S_arr[x],S_arr[x+1]);
   
-      return Q_curr;
+      return fmax(Q_curr,0);
     }
 }
