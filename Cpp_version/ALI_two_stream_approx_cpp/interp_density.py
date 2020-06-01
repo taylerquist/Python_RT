@@ -11,7 +11,7 @@ hf  = h5py.File('los_130.h5','r')
 rho = hf.get('density_x')
 rho = np.array(rho)
 l = len(rho)
-print(len(rho))
+#print(len(rho))
 x = np.linspace(0.,l,l)
 
 # (Manually) centered around the largest density jump)
@@ -34,7 +34,7 @@ x_norm = np.linspace(0,len(rho)-1,70)
 rho_interp = np.interp(x_interp,x_norm,rho)
 
 # Convert to kpc for plotting
-reg_con = 622.08123/69.
+reg_con = 2490.67416/69.
 #interp_con = 622.08123/199.
 
 x_interp = x_interp*reg_con
