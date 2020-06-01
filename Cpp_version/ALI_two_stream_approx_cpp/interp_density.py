@@ -11,7 +11,7 @@ hf  = h5py.File('los_130.h5','r')
 rho = hf.get('density_x')
 rho = np.array(rho)
 l = len(rho)
-#print(len(rho))
+print(len(rho))
 x = np.linspace(0.,l,l)
 
 # (Manually) centered around the largest density jump)
@@ -28,7 +28,7 @@ rho = rho[1899:1969]
 
 # Interpolate to desired grid density
 interp = True
-n = 500
+n = 1000
 x_interp = np.linspace(0,len(rho)-1,n)
 x_norm = np.linspace(0,len(rho)-1,70)
 rho_interp = np.interp(x_interp,x_norm,rho)

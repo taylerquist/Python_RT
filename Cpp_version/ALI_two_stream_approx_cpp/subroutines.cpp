@@ -83,8 +83,15 @@ void RT::SetConstants(void)
   density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
     (lil_h*lil_h);
   //delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm for 70 grid points
-  delta_x = 622.08123*kpc_cm/((double) (n-1));
-  printf("delta_x = %e\n",delta_x);
+  //delta_x = 622.08123*kpc_cm/((double) (n-1));
+
+  // 73.89 Mpc = 73890 kpc is the total distance (in the comoving frame) across Bruno's density skewer
+  // There were 2048 grid points, or 2047 grid cells -- this means each grid cell covered 36.09673 kpc
+  // I only grab 70 grid density values thus covering a distance of 2490.67416 kpc
+  // We interpolate the number of grid points over this 2490.67416 kpc of density information
+  // But delta_x is describing grid cells, not grid points so delta_x is the following
+  delta_x = 2490.67416/((double) (n-1));
+  //printf("delta_x = %e\n",delta_x);
   del_z = 1./float(n); // Grid step size
 
   //density_limit = 1.0e-2;
@@ -92,12 +99,12 @@ void RT::SetConstants(void)
 
   sigma_T = 0.66524587158e-24; // Thomson cross section
 
-  //I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 2.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 3.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 5.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-	I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 
   //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
@@ -183,7 +190,7 @@ void RT::InitializeGrid(void)
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
     //density[i] = density[i]*density_conversion; // Scaled density field 
-    density[i] = 1.0e-3;
+    density[i] = 1.0;
     //density[i] = 1.0e-4;
     //density[i] = 1.0e-5;
 //>>> 21.17/(100**0.3333)
