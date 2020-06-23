@@ -83,14 +83,13 @@ void RT::SetConstants(void)
   density_conversion = (M_sun_g/(kpc_cm*kpc_cm*kpc_cm))*(1./M_H_g)*((redshift+1.)*(redshift+1.)*(redshift+1.))*
     (lil_h*lil_h);
   //delta_x = (24.4/lil_h)*(1./(redshift+1.))*(kpc_cm); // Size of one grid cell in cm for 70 grid points
-  //delta_x = 622.08123*kpc_cm/((double) (n-1));
-
+  delta_x = (622.08123*kpc_cm)/((double) (n));
   // 73.89 Mpc = 73890 kpc is the total distance (in the comoving frame) across Bruno's density skewer
-  // There were 2048 grid points, or 2047 grid cells -- this means each grid cell covered 36.09673 kpc
-  // I only grab 70 grid density values thus covering a distance of 2490.67416 kpc
+  // There were 2048 grid points this means each grid cell covers ~ 36 kpc
+  // I only grab 70 grid density values thus covering a distance of 2490.67416 kpc in comoving units
   // We interpolate the number of grid points over this 2490.67416 kpc of density information
-  // But delta_x is describing grid cells, not grid points so delta_x is the following
-  delta_x = 2490.67416/((double) (n-1));
+  // This is equivalent to ~ 622 kpc in physical units that get interpolated over each cell
+
   //printf("delta_x = %e\n",delta_x);
   del_z = 1./float(n); // Grid step size
 
@@ -99,17 +98,15 @@ void RT::SetConstants(void)
 
   sigma_T = 0.66524587158e-24; // Thomson cross section
 
-  I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 1.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 2.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 	//I_p_init = 3.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-	//I_p_init = 5.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-	//I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-  //I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 5.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 
-  //I_p_init = 1.0e-15; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
-  //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  //I_p_init = 1.0e-17;
-  I_m_init = 0;
+  I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
+  //I_m_init = 0;
 
 }
 
@@ -178,10 +175,15 @@ void RT::InitializeGrid(void)
   std::ofstream eps_outfile;
   std::ofstream J_outfile;
   std::ofstream dtau_outfile;
+  std::ofstream S_out;
   QHII_outfile.open("QHII_out.txt");
   eps_outfile.open("eps_out.txt"); 
   J_outfile.open("J_out.txt");
   dtau_outfile.open("del_tau_out.txt");
+  S_out.open("S_outfile.txt");
+  
+  std::ofstream I_init_esc;
+  I_init_esc.open("I_init_escape.txt", std::ios_base::app);
 
   for(int i=0;i<n;i++)
   {
@@ -189,13 +191,8 @@ void RT::InitializeGrid(void)
     z[i] = j*del_z;                             // Setting the grid
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
-    //density[i] = density[i]*density_conversion; // Scaled density field 
-    density[i] = 1.0;
-    //density[i] = 1.0e-4;
+    density[i] = density[i]*density_conversion; // Scaled density field 
     //density[i] = 1.0e-5;
-//>>> 21.17/(100**0.3333)
-//4.561638422430451
-
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;
@@ -209,13 +206,25 @@ void RT::InitializeGrid(void)
 
     //printf("j %e Delta %e\n",j,Delta);
 
-    if(i==0)
-    {
-      I_plus[i] = I_p_init;                   // Bottom-up specific intensity
+    if(i>=0 && i<=160){
+      if(i==0)
+	{
+	  I_plus[i] = I_p_init;                   // Bottom-up specific intensity
+	}else{
+	I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
+      }
     }else{
-      I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
+      if(i==161){
+	//printf("i %d\n",i);
+	I_init_esc << i;
+	I_init_esc << '\n';
+	I_plus[i] = I_plus[i-1]*0.9; // Photon escape once the galaxy has been passed through
+	}else{
+	I_plus[i] = I_plus[i-1]*Delta;
+      }
     }
-
+    
+      
     if(i==n-1)
       I_minus[i] = I_m_init;
 
@@ -245,6 +254,8 @@ void RT::InitializeGrid(void)
     J_outfile << '\n';
     dtau_outfile << del_tau[i];
     dtau_outfile << '\n';
+    S_out << S[i];
+    S_out << '\n';
   }
 
   // This helps for reading and plotting the data later
@@ -252,13 +263,16 @@ void RT::InitializeGrid(void)
   eps_outfile << "break\n";
   J_outfile << "break\n";
   dtau_outfile << "break\n";
-
+  S_out << "break\n";
+  
   // Close the files
   QHII_outfile.close();
   eps_outfile.close();
   J_outfile.close();
   dtau_outfile.close();
-
+  I_init_esc.close();
+  S_out.close();
+  
   //Set the array of third order quadratic interpolation coefficients
   quad_int(u_p,p_p,d_p,u_m,p_m,d_m,del_tau,n);
 }

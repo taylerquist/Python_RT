@@ -34,7 +34,7 @@ x_norm = np.linspace(0,len(rho)-1,70)
 rho_interp = np.interp(x_interp,x_norm,rho)
 
 # Convert to kpc for plotting
-reg_con = 2490.67416/69.
+reg_con = 622.08123/70.
 #interp_con = 622.08123/199.
 
 x_interp = x_interp*reg_con
