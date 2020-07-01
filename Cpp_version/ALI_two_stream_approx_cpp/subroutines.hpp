@@ -24,6 +24,7 @@ class RT {
 
     double I_p_init;
     double I_m_init;
+    double f_esc;
 
     // Set a density grid and other necessary values 
     double *density;// = new double[n];       // Density profile  

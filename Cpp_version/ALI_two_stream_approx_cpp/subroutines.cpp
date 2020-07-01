@@ -108,6 +108,8 @@ void RT::SetConstants(void)
   I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
   //I_m_init = 0;
 
+  f_esc = 0.1; //escape fraction within 100kpc
+
 }
 
 void RT::InitializeGrid(void)
@@ -206,25 +208,33 @@ void RT::InitializeGrid(void)
 
     //printf("j %e Delta %e\n",j,Delta);
 
-    if(i>=0 && i<=160){
+    /*if(i>=0 && i<=160){
       if(i==0)
-	{
-	  I_plus[i] = I_p_init;                   // Bottom-up specific intensity
-	}else{
-	I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
+      {
+        I_plus[i] = I_p_init;                   // Bottom-up specific intensity
+      }else{
+        I_plus[i] = I_plus[i-1]*Delta;          // Bottom-up specific intensity
       }
     }else{
       if(i==161){
-	//printf("i %d\n",i);
-	I_init_esc << i;
-	I_init_esc << '\n';
-	I_plus[i] = (I_plus[i-1]*0.99)*Delta; // Photon escape once the galaxy has been passed through
-	}else{
-	I_plus[i] = I_plus[i-1]*Delta;
+        //printf("i %d\n",i);
+        I_init_esc << i;
+        I_init_esc << '\n';
+        I_plus[i] = (I_plus[i-1]*0.99)*Delta; // Photon escape once the galaxy has been passed through
+      }else{
+        I_plus[i] = I_plus[i-1]*Delta;
       }
+    }*/
+    if(i==0)
+    {
+      I_plus[i] = I_p_init * f_esc;
+    }else if(i<=161) {
+      I_plus[i] = I_plus[i-1]*Delta;
+    }else{
+      I_plus[i] = 0;
     }
     
-      
+    I_minus[i] = 0;
     if(i==n-1)
       I_minus[i] = I_m_init;
 
@@ -296,8 +306,10 @@ void RT::UpdateIntensity(void)
 
   //first, compute I+
   I_plus[0] = I_p_init;
-  for(i=1;i<n;i++)
+  //for(i=1;i<n;i++)
+  for(i=162;i<n;i++)
   {
+
     //compute 1/r^2 attenuation
     j = float(i) + 1.;
     //Delta = pow(((j-1)/j),2.);
