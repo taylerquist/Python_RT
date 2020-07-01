@@ -218,7 +218,7 @@ void RT::InitializeGrid(void)
 	//printf("i %d\n",i);
 	I_init_esc << i;
 	I_init_esc << '\n';
-	I_plus[i] = I_plus[i-1]*0.9; // Photon escape once the galaxy has been passed through
+	I_plus[i] = (I_plus[i-1]*0.99)*Delta; // Photon escape once the galaxy has been passed through
 	}else{
 	I_plus[i] = I_plus[i-1]*Delta;
       }
