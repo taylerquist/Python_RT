@@ -105,11 +105,12 @@ void RT::SetConstants(void)
   //I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 
-  I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  //I_m_init = 0;
-
+  //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
+  //I_m_init = 1.0e-24;
+  I_m_init = 0.;
+  
+  //f_esc = 0.1; //escape fraction within 100kpc
   f_esc = 0.1; //escape fraction within 100kpc
-
 }
 
 void RT::InitializeGrid(void)
@@ -160,7 +161,6 @@ void RT::InitializeGrid(void)
   del_tau_int_init = new double[n]; // Initial I+ and I- integration values
   epsilon = 1.0;
 
-
   // Read in the density profile .txt file
   fp = fopen("density_profile.txt","r");
   for(int i=0;i<n;i++)
@@ -194,7 +194,7 @@ void RT::InitializeGrid(void)
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
     density[i] = density[i]*density_conversion; // Scaled density field 
-    //density[i] = 1.0e-5;
+    density[i] = 0.01*density[i];
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;
@@ -305,7 +305,7 @@ void RT::UpdateIntensity(void)
   double fac;
 
   //first, compute I+
-  I_plus[0] = I_p_init;
+  //I_plus[0] = I_p_init;
   //for(i=1;i<n;i++)
   for(i=162;i<n;i++)
   {
