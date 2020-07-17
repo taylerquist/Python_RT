@@ -106,11 +106,11 @@ void RT::SetConstants(void)
   I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
 
   //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  //I_m_init = 1.0e-24;
-  I_m_init = 0.;
+  I_m_init = 1.0e-24;
+  //I_m_init = 0.;
   
   //f_esc = 0.1; //escape fraction within 100kpc
-  f_esc = 0.1; //escape fraction within 100kpc
+  f_esc = 0.01; //escape fraction within 100kpc
 }
 
 void RT::InitializeGrid(void)
@@ -194,7 +194,7 @@ void RT::InitializeGrid(void)
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
     density[i] = density[i]*density_conversion; // Scaled density field 
-    density[i] = 0.01*density[i];
+    density[i] = 0.001*density[i];
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;

@@ -22,25 +22,29 @@ for i in s_RK:
     if (i == 'break'):
         iters += 1
         
-print(iters)
-        
+bound = iters - 1
+iters = 0        
 # Set the plot colors
-ax = plt.axes()
-ax.set_prop_cycle('color',[plt.cm.viridis(i) for i in np.linspace(0, 1, iters)])
+#ax = plt.axes()
+#ax.set_prop_cycle('color',[plt.cm.viridis(i) for i in np.linspace(0, 1, iters)])
 
 for i in s_RK:
     if (i == 'break'):
-        y_arr_RK = np.array(y_RK)
-        x = np.linspace(0,grid_size,len(y_arr_RK))
-        x = x*cell_size_kpc
-        #plt.semilogy(x,y_arr_RK)
-        plt.plot(x,y_arr_RK)
-        #plt.title("log(QHII) vs distance (from galaxy) over time")
-        #plt.xlabel("distance kpc")
-        #plt.ylabel("log(QHII)")
-        #plt.show()
+        if (iters == bound):
+            y_arr_RK = np.array(y_RK)
+            x = np.linspace(0,grid_size,len(y_arr_RK))
+            x = x*cell_size_kpc
+            # Save the array for an output file
+            q_arr = y_arr_RK
+            #plt.semilogy(x,y_arr_RK)
+            plt.plot(x,y_arr_RK)
+            #plt.title("log(QHII) vs distance (from galaxy) over time")
+            #plt.xlabel("distance kpc")
+            #plt.ylabel("log(QHII)")
+            #plt.show()
         # Reset y list
         y_RK = []
+        iters += 1
     else:
         y_RK.append(float(i))
 
@@ -51,3 +55,13 @@ plt.ylabel(r'log(QHII)')
 #plt.xlim(100,)
 plt.show()
 
+# If the file needs to be created or overwritten
+#outfile = open("QHII_results.txt","w")
+# If the file is being appended
+outfile = open("QHII_results.txt","a")
+for val in q_arr:
+    outfile.write(str(val))
+    outfile.write("\n")
+outfile.write("break")
+outfile.write("\n")
+outfile.close()
