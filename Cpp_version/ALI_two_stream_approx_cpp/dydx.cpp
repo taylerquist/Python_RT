@@ -27,6 +27,8 @@ double dydx(double x, double f, double rho, double avg_I)
   double c_light = 3.*pow(10.,10.);   // Speed of light in cm/s
   double eps_ion = pow(10.,25.25);    // Ionizing photon production efficiency Hz/erg
   double lmfp;
+
+  double dQp, dQn;
   double answer;
 
   // Set the constants needed for (t_rec)**(-1)
@@ -58,8 +60,10 @@ double dydx(double x, double f, double rho, double avg_I)
 
 
   // Return the spatially dependent solution
-  answer =  (((n_dot_ion/n_h_avg) - (f*t_rec_inv)));
-  //printf("t %e avg_I %e n_dot_ion %e lmfp %e n_h_ave %e f %e t_rec_inv %e answer %e\n",x,avg_I,n_dot_ion,lmfp,n_h_avg,f,t_rec_inv,answer);
+  dQp = n_dot_ion/n_h_avg;
+  dQn = f*t_rec_inv;
+  answer =  dQp - dQn;
+  //printf("t %e avg_I %e n_dot_ion %e lmfp %e n_h_ave %e f %e t_rec_inv %e dQ %e %e answer %e\n",x,avg_I,n_dot_ion,lmfp,n_h_avg,f,t_rec_inv,dQp,dQn,answer);
 
   return answer;
 }

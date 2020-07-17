@@ -16,13 +16,13 @@ RT::RT(void)
 
 void RT::PrintGrid(FILE *fp)
 {
-  printf("i,x,I+,I-,S,QHII,Dtau\n");
+  printf("i,rho,x,I+,I-,J,S,QHII,Dtau\n");
   for(int i=0;i<n;i++)
     fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 
 }
 void RT::SaveGrid(FILE *fp)
-{
+{ 
   for(int i=0;i<n;i++)
     fprintf(fp,"%d\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",i,xg[i]/kpc_cm,density[i],I_plus[i],I_minus[i],J[i],S[i],QHII[i],del_tau[i]);
 }
@@ -104,13 +104,42 @@ void RT::SetConstants(void)
   //I_p_init = 5.0e-17; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   //I_p_init = 1.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
   I_p_init = 3.0e-16; // The scaled bottom-up specific intensity; 1 --> 10^-17*Delta
+  //I_p_init = 0.0;
 
   //I_m_init = 1.0e-22; // The scaled top-down specific intensity; 10^-22*Delta/10^-17*Delta
-  I_m_init = 1.0e-24;
+  //I_m_init = 1.0e-24;
+  //I_m_init = 1.0e-25;
+  //I_m_init = 2e-25;
+  //I_m_init = 2.1e-25;
+  //I_m_init = 2.2e-25;
+  //I_m_init = 2.3e-25;
+  //I_m_init = 2.4e-25;
+  //I_m_init = 2.5e-25;
+  //I_m_init = 2.75e-25;
+  //I_m_init = 2.9e-25;
+  I_m_init = 2.925e-25;
+
+  //I_m_init = 2.95e-25;
+
+  //I_m_init = 3e-25;
+  //I_m_init = 4e-25;
+
+  //I_m_init = 5e-25;
+
+  //I_m_init = 5e-25;
+  //I_m_init = 6e-25;
+  //I_m_init = 7e-25;
+  //I_m_init = 8e-25;
+  //I_m_init = 9e-25;
+
+  //I_m_init = 1.0e-26;
+  //I_m_init = 1.0e-36;
+
   //I_m_init = 0.;
   
-  //f_esc = 0.1; //escape fraction within 100kpc
-  f_esc = 0.01; //escape fraction within 100kpc
+  f_esc = 0.1; //escape fraction within 100kpc
+  //f_esc = 0.01; //escape fraction within 100kpc
+  //f_esc = 1.0;
 }
 
 void RT::InitializeGrid(void)
@@ -194,7 +223,7 @@ void RT::InitializeGrid(void)
     xg[i] = j*delta_x;
     B[i] = 0.;                                  // Thermal source function
     density[i] = density[i]*density_conversion; // Scaled density field 
-    density[i] = 0.001*density[i];
+    //density[i] = 0.001*density[i];
 
     //if(density[i]>density_limit)
     //density[i] = density_limit;
@@ -250,7 +279,8 @@ void RT::InitializeGrid(void)
     alpha[i] = (1.0-QHII[i])*sigma_nu*density[i];
 
     //compute the epsilon on the grid
-    eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
+    eps_grid[i] = 1.0;
+    //eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
 
     // Source function
     S[i] = eps_grid[i] * B[i] + (1. - eps_grid[i]) * J[i];
@@ -346,8 +376,16 @@ void RT::UpdateIntensity(void)
     Plus = false;
     S_val_minus = S_interp(alpha,S,u_p,p_p,d_p,u_m,p_m,d_m,delta_x,i,Plus);
 
+
+    //number density of ionizing photons
+    n_ion = exp(-del_tau[i+1]) * I_minus[i+1]*(4*pi/c)*eps_ion;
+    n_H = QHII[i]*density[i];
+    fac = fmin(fmax(0,1.0-n_H/n_ion),1);
+
+    fac = 1.;
+
     //compute I-
-    I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] + S_val_minus;
+    I_minus[i] = exp(-del_tau[i+1]) * I_minus[i+1] * fac + S_val_minus;
 
   }
 
@@ -406,7 +444,8 @@ void RT::UpdateIonization(void)
     del_tau[i] = alpha[i]*delta_x;
 
     //compute the epsilon
-    eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
+    eps_grid[i] = 1.0;
+    //eps_grid[i] = (sigma_nu*(1. - QHII[i]))/(sigma_nu*(1. - QHII[i]) + (sigma_T*QHII[i]));
 
   }
 
